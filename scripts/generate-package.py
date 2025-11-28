@@ -1,0 +1,231 @@
+import argparse
+import sys
+from pathlib import Path
+
+PYPROJECT_TOML_TEMPLATE = """\
+# WARNING: Please don't edit this file. It was automatically generated.
+
+[build-system]
+requires = [
+    "setuptools>=78", 
+    "winrt-sdk" 
+]
+
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{package_name}"
+description = "Python projection of Windows Runtime (WinRT) APIs - Merged Package"
+readme = "README.md"
+license = "MIT"
+classifiers = [
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Intended Audience :: Developers",
+]
+dynamic = ["version"]
+requires-python = ">=3.9"
+
+[project.urls]
+Documentation = "https://pywinrt.readthedocs.io"
+Repository = "https://github.com/pywinrt/pywinrt"
+Changelog = "https://github.com/pywinrt/pywinrt/blob/main/CHANGELOG.md"
+
+[tool.setuptools.dynamic]
+version = {{ file = "pywinrt-version.txt" }}
+
+[tool.setuptools]
+packages = []
+
+[tool.setuptools.package-data]
+"*" = ["*.pyi", "py.typed"]
+
+[tool.cibuildwheel]
+before-build = "uv pip install setuptools"
+# don't build for PyPy
+skip = "pp*"
+# suppress warnings about ARM64 testing
+test-skip = "*-win_arm64"
+
+[tool.cibuildwheel.windows]
+archs = ["x86", "AMD64", "ARM64"]
+"""
+
+SETUP_PY_TEMPLATE = """\
+# WARNING: Please don't edit this file. It was automatically generated.
+# Merged package setup.py that builds ALL extensions in a single package
+import os
+import tempfile
+from setuptools import Extension, setup, find_packages
+from setuptools.command.build_ext import build_ext
+from winrt_sdk import get_include_dirs
+
+
+class build_ext_ex(build_ext):
+    def initialize_options(self):
+        super().initialize_options()
+        # Use custom build directory to avoid path too long issues on Windows
+        self.temp_base = tempfile.mkdtemp()
+        self.build_temp = os.path.join(self.temp_base, "bt")
+        self.build_lib = os.path.join(self.temp_base, "bi")
+    
+    def build_extension(self, ext):
+        if self.compiler.compiler_type == "msvc":
+            ext.extra_compile_args = ["/std:c++20", "/permissive-"]
+        else:
+            raise ValueError(f"Unsupported compiler: {{self.compiler.compiler_type}}")
+
+        build_ext.build_extension(self, ext)
+
+
+# Package configuration
+PACKAGE_PREFIX = "{package_prefix}"
+SAFE_PREFIX = "{safe_prefix}"
+
+# Namespaces to build
+NAMESPACES = {namespaces_list}
+
+# Generate extensions from namespaces
+extensions = [
+    Extension(
+        f"{{SAFE_PREFIX}}._{{SAFE_PREFIX}}_{{ns.lower().replace('.', '_')}}",
+        sources=[f"py.{{ns}}.cpp"],
+        include_dirs=get_include_dirs() + ["include/cppwinrt", "include/pywinrt"],
+        libraries=["windowsapp"],
+    )
+    for ns in NAMESPACES
+]
+
+setup(
+    cmdclass={{"build_ext": build_ext_ex}},
+    ext_modules=extensions,
+    packages=find_packages(where="."),
+)
+"""
+
+PYTHON_KEYWORDS = {
+    "and", "as", "assert", "async", "await", "break", "class", "continue",
+    "def", "del", "elif", "else", "except", "finally", "for", "from",
+    "global", "if", "import", "in", "is", "lambda", "nonlocal", "not",
+    "or", "pass", "raise", "return", "try", "while", "with", "yield",
+}
+
+
+def avoid_keyword(name: str) -> str:
+    return f"{name}_" if name in PYTHON_KEYWORDS else name
+
+
+def namespace_to_ext_name(package_prefix: str, namespace: str) -> str:
+    """Convert namespace to extension name: Microsoft.UI.Input -> winappixp._winappixp_microsoft_ui_input"""
+    # Replace hyphens with underscores in package prefix for valid Python module name
+    safe_prefix = package_prefix.replace('-', '_')
+    py_package = ".".join(avoid_keyword(x.lower()) for x in namespace.split("."))
+    return f"{safe_prefix}._{safe_prefix}_{py_package.replace('.', '_')}"
+
+
+def generate_merged_package(
+    output_dir: Path,
+    package_prefix: str,
+    package_name: str,
+    namespaces: list[str],
+    version: str
+):
+    """Generate setup.py and pyproject.toml for a merged package with all namespaces."""
+    
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    print(f"Generating merged package '{package_name}' with {len(namespaces)} namespace(s)...")
+    
+    # Replace hyphens with underscores for valid Python package name
+    safe_prefix = package_prefix.replace('-', '_')
+    
+    # Format namespaces as Python list literal
+    namespaces_list = "[\n"
+    for namespace in sorted(namespaces):
+        namespaces_list += f'    "{namespace}",\n'
+    namespaces_list += "]"
+    
+    # Generate setup.py
+    setup_py_content = SETUP_PY_TEMPLATE.format(
+        package_prefix=package_prefix,
+        safe_prefix=safe_prefix,
+        namespaces_list=namespaces_list,
+    )
+    
+    with open(output_dir / "setup.py", "w", encoding="utf-8", newline="\n") as f:
+        f.write(setup_py_content)
+    
+    # Create __init__.py for the package if it doesn't exist
+    package_dir = output_dir / safe_prefix
+    package_dir.mkdir(exist_ok=True)
+    init_file = package_dir / "__init__.py"
+    if not init_file.exists():
+        init_file.write_text("# Auto-generated package\n", encoding="utf-8")
+    
+    # Generate pyproject.toml
+    pyproject_content = PYPROJECT_TOML_TEMPLATE.format(
+        package_name=package_name,
+        package_prefix=package_prefix,
+        version=version,
+    )
+    
+    with open(output_dir / "pyproject.toml", "w", encoding="utf-8", newline="\n") as f:
+        f.write(pyproject_content)
+    
+    print(f"[OK] Generated setup.py and pyproject.toml in {output_dir}")
+    print(f"  Extensions: {len(namespaces)}")
+    for ns in sorted(namespaces):
+        print(f"    - {ns}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Generate merged Python package with multiple namespace extensions."
+    )
+    parser.add_argument(
+        "output_dir",
+        type=Path,
+        help="Output directory for generated setup.py and pyproject.toml"
+    )
+    parser.add_argument(
+        "--package-prefix",
+        required=True,
+        help="Package prefix (e.g., 'winappixp')"
+    )
+    parser.add_argument(
+        "--package-name",
+        required=True,
+        help="Package name (e.g., 'winappixp-full')"
+    )
+    parser.add_argument(
+        "--namespace",
+        action="append",
+        dest="namespaces",
+        required=True,
+        help="Namespace to include (can be specified multiple times, e.g., 'Microsoft.UI', 'Microsoft.UI.Input')"
+    )
+
+    parser.add_argument(
+        "--version",
+        required=True,
+        help="Version of the SDK package"
+    )
+    
+    args = parser.parse_args()
+    
+    if not args.namespaces:
+        print("Error: At least one namespace must be specified with --namespace")
+        sys.exit(1)
+    
+    generate_merged_package(
+        args.output_dir,
+        args.package_prefix,
+        args.package_name,
+        args.namespaces,
+        args.version
+    )
+
+
+if __name__ == "__main__":
+    main()

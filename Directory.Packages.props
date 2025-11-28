@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Windows.SDK.CPP" Version="10.0.26100.4188" />
+    <PackageVersion Include="Microsoft.Windows.CppWinRT" Version="2.0.250303.1" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="1.8.251104001" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.Foundation" Version="1.8.251104000" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
+    <PackageVersion Include="PyWinRT" Version="[3.2.1]" />
+  </ItemGroup>
+</Project>
