@@ -14,7 +14,8 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "{package_name}"
+name = "{package_prefix}"
+version = "{version}"
 description = "Python projection of Windows Runtime (WinRT) APIs - Merged Package"
 readme = "README.md"
 license = "MIT"
@@ -24,7 +25,6 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Intended Audience :: Developers",
 ]
-dynamic = ["version"]
 requires-python = ">=3.9"
 
 [project.urls]
@@ -32,11 +32,8 @@ Documentation = "https://pywinrt.readthedocs.io"
 Repository = "https://github.com/pywinrt/pywinrt"
 Changelog = "https://github.com/pywinrt/pywinrt/blob/main/CHANGELOG.md"
 
-[tool.setuptools.dynamic]
-version = {{ file = "pywinrt-version.txt" }}
-
-[tool.setuptools]
-packages = []
+[tool.setuptools.packages.find]
+where = ["."]
 
 [tool.setuptools.package-data]
 "*" = ["*.pyi", "py.typed"]
@@ -55,21 +52,12 @@ archs = ["x86", "AMD64", "ARM64"]
 SETUP_PY_TEMPLATE = """\
 # WARNING: Please don't edit this file. It was automatically generated.
 # Merged package setup.py that builds ALL extensions in a single package
-import os
-import tempfile
 from setuptools import Extension, setup, find_packages
 from setuptools.command.build_ext import build_ext
 from winrt_sdk import get_include_dirs
 
 
 class build_ext_ex(build_ext):
-    def initialize_options(self):
-        super().initialize_options()
-        # Use custom build directory to avoid path too long issues on Windows
-        self.temp_base = tempfile.mkdtemp()
-        self.build_temp = os.path.join(self.temp_base, "bt")
-        self.build_lib = os.path.join(self.temp_base, "bi")
-    
     def build_extension(self, ext):
         if self.compiler.compiler_type == "msvc":
             ext.extra_compile_args = ["/std:c++20", "/permissive-"]
@@ -127,7 +115,6 @@ def namespace_to_ext_name(package_prefix: str, namespace: str) -> str:
 def generate_merged_package(
     output_dir: Path,
     package_prefix: str,
-    package_name: str,
     namespaces: list[str],
     version: str
 ):
@@ -135,7 +122,7 @@ def generate_merged_package(
     
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    print(f"Generating merged package '{package_name}' with {len(namespaces)} namespace(s)...")
+    print(f"Generating merged package '{package_prefix}' with {len(namespaces)} namespace(s)...")
     
     # Replace hyphens with underscores for valid Python package name
     safe_prefix = package_prefix.replace('-', '_')
@@ -165,7 +152,6 @@ def generate_merged_package(
     
     # Generate pyproject.toml
     pyproject_content = PYPROJECT_TOML_TEMPLATE.format(
-        package_name=package_name,
         package_prefix=package_prefix,
         version=version,
     )
@@ -191,12 +177,7 @@ def main():
     parser.add_argument(
         "--package-prefix",
         required=True,
-        help="Package prefix (e.g., 'winappixp')"
-    )
-    parser.add_argument(
-        "--package-name",
-        required=True,
-        help="Package name (e.g., 'winappixp-full')"
+        help="Package prefix (e.g., 'winappsdk-Foundation')"
     )
     parser.add_argument(
         "--namespace",
@@ -221,7 +202,6 @@ def main():
     generate_merged_package(
         args.output_dir,
         args.package_prefix,
-        args.package_name,
         args.namespaces,
         args.version
     )

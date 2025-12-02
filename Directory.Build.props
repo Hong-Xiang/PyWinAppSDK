@@ -6,9 +6,10 @@
         <RestorePackagesPath>$(PackagesDirectory)</RestorePackagesPath>
         <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
         <PyWinRTVersion>3.2.1</PyWinRTVersion>
-        <PyWinRTPath>$(PackagesDirectory)\pywinrt\$(PyWinRTVersion)\tools\$(TargetFramework)\any\PyWinRT.dll</PyWinRTPath>
+        <PyWinRTPath>$(PackagesDirectory)pywinrt\$(PyWinRTVersion)\tools\$(TargetFramework)\any\PyWinRT.dll</PyWinRTPath>
         <PyWinRTExe>dotnet $(PyWinRTPath)</PyWinRTExe>
-        <ScriptsDirectory>$(MSBuildThisFileDirectory)\scripts\</ScriptsDirectory>
+        <ScriptsDirectory>$(MSBuildThisFileDirectory)scripts\</ScriptsDirectory>
         <TargetPlatformVersion>10.0.26100.0</TargetPlatformVersion>
+        <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
     </PropertyGroup>
 </Project>
