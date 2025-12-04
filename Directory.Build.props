@@ -12,4 +12,13 @@
         <TargetPlatformVersion>10.0.26100.0</TargetPlatformVersion>
         <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
     </PropertyGroup>
+
+    <!-- Common output paths for PyWinRT package generation -->
+    <PropertyGroup>
+        <ObjPath Condition="'$(ObjPath)' == ''">$(MSBuildProjectDirectory)\obj</ObjPath>
+        <PythonPackagePath Condition="'$(PythonPackagePath)' == ''">$(ObjPath)\pkg</PythonPackagePath>
+        <PyWinRTOutputPath Condition="'$(PyWinRTOutputPath)' == ''">$(ObjPath)\gen</PyWinRTOutputPath>
+        <PyWinRTHeaderPath Condition="'$(PyWinRTHeaderPath)' == ''">$(PythonPackagePath)\include\pywinrt</PyWinRTHeaderPath>
+        <CppWinRTOutputPath Condition="'$(CppWinRTOutputPath)' == ''">$(PythonPackagePath)\include\cppwinrt</CppWinRTOutputPath>
+    </PropertyGroup>
 </Project>

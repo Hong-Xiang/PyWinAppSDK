@@ -8,11 +8,11 @@ This uses custom wheels built from PyWinAppSDK:
 Run with uv (from project root):
     uv run --with wheels/winappsdk_foundation-3.2.1-cp313-cp313-win_amd64.whl \
            --with wheels/winappsdk_interactiveexperiences-3.2.1-cp313-cp313-win_amd64.whl \
-           --with winrt-runtime \
-           --with winrt-Windows.Foundation \
-           --with winrt-Windows.Foundation.Collections \
            --no-project \
            python test/storage-picker-test.py
+
+Note: The winrt-runtime and winrt-Windows.* packages are declared as dependencies
+in the wheel packages and will be installed automatically by pip/uv.
 
 Requirements:
     - Windows App SDK runtime installed (or NuGet packages restored)

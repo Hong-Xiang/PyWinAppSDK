@@ -1,6 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
+from typing import Optional
 
 PYPROJECT_TOML_TEMPLATE = """\
 # WARNING: Please don't edit this file. It was automatically generated.
@@ -26,6 +27,9 @@ classifiers = [
     "Intended Audience :: Developers",
 ]
 requires-python = ">=3.9"
+dependencies = [
+    "winrt-runtime",
+{dependencies}]
 
 [project.urls]
 Documentation = "https://pywinrt.readthedocs.io"
@@ -115,8 +119,9 @@ def namespace_to_ext_name(package_prefix: str, namespace: str) -> str:
 def generate_merged_package(
     output_dir: Path,
     package_prefix: str,
-    namespaces: list[str],
-    version: str
+    namespaces: list,
+    version: str,
+    dependencies: Optional[list] = None
 ):
     """Generate setup.py and pyproject.toml for a merged package with all namespaces."""
     
@@ -150,10 +155,17 @@ def generate_merged_package(
     if not init_file.exists():
         init_file.write_text("# Auto-generated package\n", encoding="utf-8")
     
+    # Format additional dependencies
+    deps_str = ""
+    if dependencies:
+        for dep in sorted(dependencies):
+            deps_str += f'    "{dep}",\n'
+    
     # Generate pyproject.toml
     pyproject_content = PYPROJECT_TOML_TEMPLATE.format(
         package_prefix=package_prefix,
         version=version,
+        dependencies=deps_str,
     )
     
     with open(output_dir / "pyproject.toml", "w", encoding="utf-8", newline="\n") as f:
@@ -186,7 +198,12 @@ def main():
         required=True,
         help="Namespace to include (can be specified multiple times, e.g., 'Microsoft.UI', 'Microsoft.UI.Input')"
     )
-
+    parser.add_argument(
+        "--dependency",
+        action="append",
+        dest="dependencies",
+        help="Additional dependency to include (can be specified multiple times, e.g., 'winrt-Windows.Foundation')"
+    )
     parser.add_argument(
         "--version",
         required=True,
@@ -203,7 +220,8 @@ def main():
         args.output_dir,
         args.package_prefix,
         args.namespaces,
-        args.version
+        args.version,
+        args.dependencies
     )
 
 
