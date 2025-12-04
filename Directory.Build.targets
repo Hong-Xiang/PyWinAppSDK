@@ -200,8 +200,12 @@
     <MakeDir Directories="$(ShortBuildPath)" />
     <Exec Command="robocopy &quot;$(PythonPackagePath)&quot; &quot;$(ShortBuildPath)&quot; /E /NFL /NDL /NJH /NJS /NC /NS /NP" IgnoreExitCode="true" />
     
-    <!-- Build from the short path -->
-    <Exec Command="uv build --wheel --out-dir $(LocalWheelDirectory)" WorkingDirectory="$(ShortBuildPath)" />
+    <!-- Build from the short path. Use PythonPath property if specified for cross-architecture builds -->
+    <PropertyGroup>
+      <UvBuildCommand Condition="'$(PythonPath)' != ''">uv build --wheel --python &quot;$(PythonPath)&quot; --out-dir $(LocalWheelDirectory)</UvBuildCommand>
+      <UvBuildCommand Condition="'$(PythonPath)' == ''">uv build --wheel --out-dir $(LocalWheelDirectory)</UvBuildCommand>
+    </PropertyGroup>
+    <Exec Command="$(UvBuildCommand)" WorkingDirectory="$(ShortBuildPath)" />
 
     <ItemGroup>
       <WheelFiles Include="$(LocalWheelDirectory)\*.whl" />

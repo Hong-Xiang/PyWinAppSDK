@@ -62,13 +62,23 @@ class PackageVersion(ctypes.Structure):
 def find_bootstrap_dll():
     """Find the Windows App SDK bootstrap DLL."""
     import platform
+    import struct
+    import sys
     
-    # Determine architecture
-    arch = platform.machine().lower()
-    if arch in ("amd64", "x86_64"):
-        arch_folder = "win-x64"
-    elif arch == "arm64":
-        arch_folder = "win-arm64"
+    # Determine architecture based on Python's bitness, not hardware
+    # This is important for x64 Python running on ARM64 via emulation
+    pointer_size = struct.calcsize("P") * 8
+    
+    # Check if Python is x64, x86, or ARM64
+    if pointer_size == 64:
+        # Check sys.version which has the architecture info
+        if "AMD64" in sys.version:
+            arch_folder = "win-x64"
+        elif "ARM64" in sys.version:
+            arch_folder = "win-arm64"
+        else:
+            # Default to x64 for 64-bit if unclear
+            arch_folder = "win-x64"
     else:
         arch_folder = "win-x86"
     
@@ -124,7 +134,74 @@ def initialize_windows_app_sdk(major_minor_version: str = "1.8", min_version: st
         )
     
     print(f"Loading bootstrap DLL: {dll_path}")
-    bootstrap = ctypes.CDLL(dll_path)
+    
+    # Find and add the Windows App Runtime framework DLLs to PATH
+    # These are installed via the runtime package, not the NuGet package
+    old_path = os.environ.get('PATH', '')
+    try:
+        import subprocess
+        import platform
+        import struct
+        import sys
+        
+        # Match runtime architecture to Python architecture
+        pointer_size = struct.calcsize("P") * 8
+        if pointer_size == 64:
+            # Check sys.version which has the architecture info
+            if "AMD64" in sys.version:
+                runtime_arch = "X64"
+            elif "ARM64" in sys.version:
+                runtime_arch = "ARM64"
+            else:
+                runtime_arch = "X64"  # Default to x64
+        else:
+            runtime_arch = "X86"
+            
+        print(f"Looking for {runtime_arch} runtime package...")
+        
+        # Get the runtime package location
+        result = subprocess.run(
+            ['powershell', '-Command', 
+             f'Get-AppxPackage -Name "*WindowsAppRuntime.1.8*" | Where-Object {{ $_.Architecture -eq "{runtime_arch}" }} | Select-Object -First 1 -ExpandProperty InstallLocation'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        runtime_path = result.stdout.strip()
+        if runtime_path and os.path.exists(runtime_path):
+            print(f"Found runtime DLLs: {runtime_path}")
+            dll_dir = os.path.dirname(dll_path)
+            os.environ['PATH'] = runtime_path + os.pathsep + dll_dir + os.pathsep + old_path
+        else:
+            print(f"⚠️  Could not find installed Windows App Runtime 1.8 {runtime_arch} package")
+            dll_dir = os.path.dirname(dll_path)
+            os.environ['PATH'] = dll_dir + os.pathsep + old_path
+    except Exception as e:
+        print(f"⚠️  Could not locate runtime DLLs: {e}")
+        dll_dir = os.path.dirname(dll_path)
+        os.environ['PATH'] = dll_dir + os.pathsep + old_path
+    
+    try:
+        # Set error mode to prevent crash dialogs
+        import ctypes.wintypes
+        kernel32 = ctypes.windll.kernel32
+        SEM_FAILCRITICALERRORS = 0x0001
+        old_mode = kernel32.SetErrorMode(SEM_FAILCRITICALERRORS)
+        
+        bootstrap = ctypes.CDLL(dll_path)
+        
+        # Restore error mode
+        kernel32.SetErrorMode(old_mode)
+    except OSError as e:
+        # Restore original PATH on error
+        os.environ['PATH'] = old_path
+        print(f"❌ Failed to load bootstrap DLL: {e}")
+        if hasattr(e, 'winerror'):
+            print(f"   HRESULT: 0x{e.winerror & 0xFFFFFFFF:08X}")
+        print("\nThis might be due to missing dependencies. Try:")
+        print("  1. Install Windows App SDK runtime: winget install Microsoft.WindowsAppSDK.1.8")
+        print("  2. Or add the Framework DLLs to PATH")
+        raise
     
     # MddBootstrapInitialize2 function signature:
     # HRESULT MddBootstrapInitialize2(
@@ -141,7 +218,7 @@ def initialize_windows_app_sdk(major_minor_version: str = "1.8", min_version: st
         wintypes.UINT,      # options
     ]
     MddBootstrapInitialize2.restype = ctypes.HRESULT
-    
+
     MddBootstrapShutdown = bootstrap.MddBootstrapShutdown
     MddBootstrapShutdown.argtypes = []
     MddBootstrapShutdown.restype = None
@@ -160,10 +237,24 @@ def initialize_windows_app_sdk(major_minor_version: str = "1.8", min_version: st
     
     # Initialize
     print(f"Initializing Windows App SDK {major_minor_version}...")
-    hr = MddBootstrapInitialize2(major_minor, None, pkg_version, options)
+    print(f"  majorMinor: 0x{major_minor:08X}")
+    print(f"  minVersion: {pkg_version.Major}.{pkg_version.Minor}.{pkg_version.Build}.{pkg_version.Revision}")
+    print(f"  options: {options}")
+    
+    try:
+        hr = MddBootstrapInitialize2(major_minor, None, pkg_version, options)
+    except Exception as e:
+        print(f"❌ Exception during MddBootstrapInitialize2: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+    
+    print(f"  HRESULT: 0x{hr & 0xFFFFFFFF:08X}")
     
     if hr < 0:
-        raise ctypes.WinError(hr)
+        error = ctypes.WinError(hr)
+        print(f"❌ MddBootstrapInitialize2 failed with HRESULT: 0x{hr & 0xFFFFFFFF:08X}")
+        raise error
     
     print("✅ Windows App SDK initialized successfully!")
     
@@ -172,6 +263,8 @@ def initialize_windows_app_sdk(major_minor_version: str = "1.8", min_version: st
     finally:
         print("Shutting down Windows App SDK...")
         MddBootstrapShutdown()
+        # Restore original PATH
+        os.environ['PATH'] = old_path
 
 
 # Now import the Windows App SDK types
@@ -206,6 +299,12 @@ async def pick_single_file():
 
 
 if __name__ == "__main__":
+    import sys
+    
+    # Enable better error output
+    sys.stderr.flush()
+    sys.stdout.flush()
+    
     print("Testing Windows App SDK Storage Pickers...")
     print()
     
@@ -215,29 +314,52 @@ if __name__ == "__main__":
     print(f"  - FileOpenPicker: {FileOpenPicker}")
     print()
     
-    # Try to initialize and use the file picker
+    # Try WITHOUT bootstrap first - it might just work since runtime is installed
+    print("Attempting to use Windows App SDK without bootstrap initialization...")
+    print("(This works if the runtime is already available in the system)")
+    print()
+    
     try:
-        with initialize_windows_app_sdk(
-            "1.8", 
-            options=MddBootstrapInitializeOptions.ON_ERROR_SHOW_UI
-        ):
-            print("\nOpening file picker...")
-            file = asyncio.run(pick_single_file())
-            
-            if file:
-                print(f"\n✅ Success! Selected: {file.path}")
-                
-    except FileNotFoundError as e:
-        print(f"❌ {e}")
-        print("\nTo install Windows App SDK, run:")
-        print("  winget install Microsoft.WindowsAppSDK.1.8")
+        print("Opening file picker...")
+        file = asyncio.run(pick_single_file())
         
-    except OSError as e:
-        print(f"❌ Bootstrap failed: {e}")
-        if hasattr(e, 'winerror'):
-            print(f"   HRESULT: 0x{e.winerror & 0xFFFFFFFF:08X}")
+        if file:
+            print(f"\n✅ Success! Selected: {file.path}")
+        else:
+            print("\n✅ Picker opened successfully (no file selected)")
             
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"\n❌ Failed without bootstrap: {e}")
+        print("\nNow trying WITH bootstrap initialization...")
+        print()
+        
+        # If that fails, try with bootstrap
+        try:
+            with initialize_windows_app_sdk(
+                "1.8", 
+                options=MddBootstrapInitializeOptions.ON_ERROR_SHOW_UI
+            ):
+                print("\nOpening file picker...")
+                file = asyncio.run(pick_single_file())
+                
+                if file:
+                    print(f"\n✅ Success! Selected: {file.path}")
+                    
+        except FileNotFoundError as e:
+            print(f"❌ {e}")
+            print("\nTo install Windows App SDK, run:")
+            print("  winget install Microsoft.WindowsAppSDK.1.8")
+            
+        except OSError as e:
+            print(f"❌ Bootstrap failed: {e}")
+            if hasattr(e, 'winerror'):
+                print(f"   HRESULT: 0x{e.winerror & 0xFFFFFFFF:08X}")
+                
+        except Exception as e:
+            print(f"❌ Unexpected error: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    finally:
+        sys.stderr.flush()
+        sys.stdout.flush()
