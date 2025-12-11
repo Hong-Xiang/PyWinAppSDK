@@ -1,0 +1,223 @@
+<Project>
+  <!--
+    Shared targets for PyWinRT Python package generation.
+    
+    Each project must define:
+      - PackageName: The Python package name (e.g., winappsdk-Foundation)
+      - InputWinMD: ItemGroup with metadata to generate code from
+      - ReferenceWinMD: ItemGroup with dependencies for resolution (optional)
+      - PythonDependency: ItemGroup with runtime Python package dependencies (optional)
+      
+    The WindowsSDK reference is automatically added using WinSDKMetadataPath.
+    
+    Output path properties (ObjPath, PythonPackagePath, etc.) are defined in Directory.Build.props.
+  -->
+
+  <!-- Common package files -->
+  <ItemGroup>
+    <PythonPackageFile Include="$(MSBuildProjectDirectory)\MANIFEST.in" Condition="Exists('$(MSBuildProjectDirectory)\MANIFEST.in')" />
+    <PythonPackageFile Include="$(MSBuildProjectDirectory)\README.md" Condition="Exists('$(MSBuildProjectDirectory)\README.md')" />
+  </ItemGroup>
+
+  <!-- 
+    Build CLI arguments from InputWinMD and ReferenceWinMD ItemGroups.
+    Projects using the simple single-input pattern can skip defining these
+    and just set MetadataPath property instead.
+  -->
+  <Target Name="BuildWinMDArguments">
+    <!-- Set tool paths that depend on NuGet package properties (must be inside target for proper evaluation) -->
+    <PropertyGroup>
+      <CppWinRTExe Condition="'$(CppWinRTExe)' == ''">$(PkgMicrosoft_Windows_CppWinRT)\bin\cppwinrt.exe</CppWinRTExe>
+      <WinSDKMetadataPath Condition="'$(WinSDKMetadataPath)' == ''">$(PkgMicrosoft_Windows_SDK_CPP)\c\References\$(TargetPlatformVersion)</WinSDKMetadataPath>
+      <!-- Check if WindowsSDK is already in ReferenceWinMD -->
+      <_HasWinSDKRef>false</_HasWinSDKRef>
+      <_HasWinSDKRef Condition="'@(ReferenceWinMD)' != '' and $([System.String]::new('@(ReferenceWinMD)').Contains('$(WinSDKMetadataPath)'))">true</_HasWinSDKRef>
+    </PropertyGroup>
+
+    <!-- Always add WindowsSDK as reference (needed for type resolution) -->
+    <ItemGroup>
+      <ReferenceWinMD Include="$(WinSDKMetadataPath)" Condition="'$(WinSDKMetadataPath)' != '' and '$(_HasWinSDKRef)' != 'true'">
+        <PyPackageName>winrt</PyPackageName>
+      </ReferenceWinMD>
+    </ItemGroup>
+
+    <!-- CppWinRT: -input for InputWinMD, -input/-reference for ReferenceWinMD -->
+    <PropertyGroup>
+      <CppWinRTInputArgs>@(InputWinMD->'-input %(Identity)', ' ')</CppWinRTInputArgs>
+      <CppWinRTRefArgs>@(ReferenceWinMD->'-input %(Identity)', ' ')</CppWinRTRefArgs>
+      <!-- WindowsSDK uses -reference instead of -input -->
+      <CppWinRTRefArgs>$(CppWinRTRefArgs.Replace('-input $(WinSDKMetadataPath)', '-reference $(WinSDKMetadataPath)'))</CppWinRTRefArgs>
+    </PropertyGroup>
+
+    <!-- PyWinRT: input and reference use "packagename;path" format -->
+    <PropertyGroup>
+      <PyWinRTInputArgs>@(InputWinMD->'--input %(PyPackageName);%(Identity)', ' ')</PyWinRTInputArgs>
+      <PyWinRTRefArgs>@(ReferenceWinMD->'--reference %(PyPackageName);%(Identity)', ' ')</PyWinRTRefArgs>
+    </PropertyGroup>
+
+    <Message Text="CppWinRT Input Args: $(CppWinRTInputArgs)" Importance="high" Condition="'$(CppWinRTInputArgs)' != ''" />
+    <Message Text="CppWinRT Ref Args: $(CppWinRTRefArgs)" Importance="high" Condition="'$(CppWinRTRefArgs)' != ''" />
+    <Message Text="PyWinRT Input Args: $(PyWinRTInputArgs)" Importance="high" Condition="'$(PyWinRTInputArgs)' != ''" />
+    <Message Text="PyWinRT Ref Args: $(PyWinRTRefArgs)" Importance="high" Condition="'$(PyWinRTRefArgs)' != ''" />
+  </Target>
+
+  <!-- Generate C++/WinRT projection headers -->
+  <Target Name="GenerateCppWinRT" DependsOnTargets="BuildWinMDArguments">
+    <MakeDir Directories="$(CppWinRTOutputPath)" />
+    
+    <!-- Use ItemGroup-based arguments if available, otherwise fall back to simple pattern -->
+    <PropertyGroup Condition="'$(CppWinRTInputArgs)' == '' and '$(MetadataPath)' != ''">
+      <CppWinRTInputArgs>-input $(MetadataPath)</CppWinRTInputArgs>
+      <CppWinRTRefArgs>-reference $(WinSDKMetadataPath)</CppWinRTRefArgs>
+    </PropertyGroup>
+
+    <Exec
+      Command="$(CppWinRTExe) $(CppWinRTInputArgs) $(CppWinRTRefArgs) -output $(CppWinRTOutputPath)"
+      WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
+  <!-- Generate PyWinRT Python bindings -->
+  <Target Name="GeneratePyWinRT" DependsOnTargets="BuildWinMDArguments">
+    <MakeDir Directories="$(PyWinRTOutputPath)" />
+
+    <!-- Use ItemGroup-based arguments if available, otherwise fall back to simple pattern -->
+    <PropertyGroup Condition="'$(PyWinRTInputArgs)' == '' and '$(MetadataPath)' != ''">
+      <PyWinRTInputArgs>--input $(PackageName);$(MetadataPath)</PyWinRTInputArgs>
+      <PyWinRTRefArgs>--reference winrt;$(WinSDKMetadataPath)</PyWinRTRefArgs>
+    </PropertyGroup>
+
+    <Exec
+      Command="$(PyWinRTExe) $(PyWinRTInputArgs) $(PyWinRTRefArgs) --output $(PyWinRTOutputPath) --header-path $(PyWinRTHeaderPath)"
+      WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
+  <!-- Collect namespace names from generated .cpp files -->
+  <Target Name="CollectNamespaces" DependsOnTargets="GeneratePyWinRT">
+    <ItemGroup>
+      <NamespaceCppFile Include="$(PyWinRTOutputPath)\$(PackageName)-*\py.*.cpp" />
+    </ItemGroup>
+
+    <!-- Namespaces to exclude (e.g., internal implementation details) -->
+    <PropertyGroup>
+      <ExcludedNamespaces Condition="'$(ExcludedNamespaces)' == ''">py.Microsoft.Windows.ApplicationModel.Background.UniversalBGTask</ExcludedNamespaces>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'@(NamespaceCppFile)' != ''">
+      <!-- Extract namespace from filename: py.Microsoft.UI.cpp -> Microsoft.UI -->
+      <Namespace Include="@(NamespaceCppFile)" Condition="!$(ExcludedNamespaces.Contains('%(Filename)'))">
+        <NamespaceValue>$([System.String]::Copy('%(Filename)').Substring(3))</NamespaceValue>
+      </Namespace>
+    </ItemGroup>
+
+    <Message Text="Found @(Namespace->Count()) namespace(s):" Importance="high" />
+    <Message Text="  - %(Namespace.NamespaceValue)" Importance="high" Condition="'@(Namespace)' != ''" />
+  </Target>
+
+  <!-- Merge PyWinRT output files into package directory -->
+  <Target Name="MergePyWinRTResults" DependsOnTargets="GenerateCppWinRT;GeneratePyWinRT;CollectNamespaces">
+    <Message Text="==================== MergePyWinRTResults ====================" Importance="high" />
+
+    <MakeDir Directories="$(PythonPackagePath)" />
+
+    <ItemGroup>
+      <FilesToMerge Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.py" />
+      <FilesToMerge Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.pyi" />
+      <FilesToMerge Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.cpp" />
+      <FilesToMerge>
+        <!-- Strip the first directory level (package-version folder) from the path -->
+        <StrippedPath Condition="'%(RecursiveDir)' != '' and $([System.String]::Copy('%(RecursiveDir)').IndexOf('\')) &gt;= 0">$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($([System.String]::Copy('%(RecursiveDir)').IndexOf('\')), 1))))</StrippedPath>
+        <StrippedPath Condition="'%(RecursiveDir)' == '' or $([System.String]::Copy('%(RecursiveDir)').IndexOf('\')) &lt; 0"></StrippedPath>
+      </FilesToMerge>
+    </ItemGroup>
+
+    <!-- Copy files with the stripped paths -->
+    <Copy SourceFiles="@(FilesToMerge)"
+      DestinationFiles="@(FilesToMerge->'$(PythonPackagePath)\%(StrippedPath)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+
+    <Message Text="Merged @(FilesToMerge->Count()) files to $(PythonPackagePath)" />
+
+    <!-- Identify references that have headers to copy -->
+    <ItemGroup>
+      <ReferenceWithHeaders Include="@(ReferenceWinMD)" Condition="'%(ReferenceWinMD.HeaderPath)' != ''" />
+    </ItemGroup>
+
+    <Message Text="Will copy headers from %(ReferenceWithHeaders.PyPackageName)..."
+      Importance="high" Condition="'@(ReferenceWithHeaders)' != ''" />
+  </Target>
+
+  <!-- Copy headers from each reference package that has HeaderPath metadata -->
+  <Target Name="CopyReferenceHeaders" DependsOnTargets="MergePyWinRTResults" Outputs="%(ReferenceWinMD.PyPackageName)">
+    <ItemGroup>
+      <RefHeaders Include="%(ReferenceWinMD.HeaderPath)\**\*.*"
+        Condition="'%(ReferenceWinMD.HeaderPath)' != '' and Exists('%(ReferenceWinMD.HeaderPath)')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(RefHeaders)"
+      DestinationFiles="@(RefHeaders->'$(PythonPackagePath)\include\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true"
+      Condition="'@(RefHeaders)' != ''" />
+
+    <Message Text="Copied @(RefHeaders->Count()) header(s) from %(ReferenceWinMD.PyPackageName)"
+      Importance="high" Condition="'@(RefHeaders)' != ''" />
+  </Target>
+
+  <!-- Generate pyproject.toml and setup.py -->
+  <Target Name="GeneratePythonProjectFiles" DependsOnTargets="MergePyWinRTResults;CopyReferenceHeaders;CollectNamespaces">
+    <Message Text="==================== Generating Merged Package Files ====================" Importance="high" />
+
+    <!-- Build namespace and dependency arguments for the script -->
+    <PropertyGroup>
+      <NamespaceArgs>@(Namespace->'--namespace %(NamespaceValue)', ' ')</NamespaceArgs>
+      <DependencyArgs>@(PythonDependency->'--dependency %(Identity)', ' ')</DependencyArgs>
+    </PropertyGroup>
+
+    <Message Text="Generating merged package with @(Namespace->Count()) namespace(s)" Importance="high" />
+    <Message Text="Dependencies: @(PythonDependency->Count()) package(s)" Importance="high" Condition="'@(PythonDependency)' != ''" />
+
+    <!-- Generate merged package using the script -->
+    <Exec
+      Command="python $(ScriptsDirectory)generate-package.py $(PythonPackagePath) --package-prefix $(PackageName) --version $(PyWinRTVersion) $(NamespaceArgs) $(DependencyArgs)"
+      WorkingDirectory="$(PythonPackagePath)" />
+
+    <!-- Copy package files (MANIFEST.in, README.md) from project directory -->
+    <Copy SourceFiles="@(PythonPackageFile)" DestinationFolder="$(PythonPackagePath)" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Build the Python wheel -->
+  <Target Name="GeneratePythonProject" BeforeTargets="Build" DependsOnTargets="GeneratePythonProjectFiles">
+    <Message Text="==================== Building Package ===================" />
+
+    <MakeDir Directories="$(LocalWheelDirectory)" Condition="!Exists('$(LocalWheelDirectory)')" />
+
+    <!-- Use a short temp directory to avoid Windows path length issues during C++ compilation -->
+    <PropertyGroup>
+      <ShortBuildPath>$(TEMP)\pb</ShortBuildPath>
+    </PropertyGroup>
+    
+    <!-- Clean and copy package to short path -->
+    <RemoveDir Directories="$(ShortBuildPath)" />
+    <MakeDir Directories="$(ShortBuildPath)" />
+    <Exec Command="robocopy &quot;$(PythonPackagePath)&quot; &quot;$(ShortBuildPath)&quot; /E /NFL /NDL /NJH /NJS /NC /NS /NP" IgnoreExitCode="true" />
+    
+    <!-- Build from the short path. Use PythonPath property if specified for cross-architecture builds -->
+    <PropertyGroup>
+      <UvBuildCommand Condition="'$(PythonPath)' != ''">uv build --wheel --python &quot;$(PythonPath)&quot; --out-dir $(LocalWheelDirectory)</UvBuildCommand>
+      <UvBuildCommand Condition="'$(PythonPath)' == ''">uv build --wheel --out-dir $(LocalWheelDirectory)</UvBuildCommand>
+    </PropertyGroup>
+    <Exec Command="$(UvBuildCommand)" WorkingDirectory="$(ShortBuildPath)" />
+
+    <ItemGroup>
+      <WheelFiles Include="$(LocalWheelDirectory)\*.whl" />
+    </ItemGroup>
+
+    <Message Text="[OK] Built wheel: %(WheelFiles.Filename)%(WheelFiles.Extension)" Importance="high" Condition="'@(WheelFiles)' != ''" />
+  </Target>
+
+  <!-- Clean generated files -->
+  <Target Name="PyWinAppSDKClean" AfterTargets="Clean">
+    <Message Text="Cleaning $(PackageName) output..." Importance="high" />
+    <RemoveDir Directories="$(ObjPath)" />
+  </Target>
+
+</Project>

@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <!--
+    PyWinRT Python package for Microsoft.WindowsAppSDK.Foundation
+    
+    Depends on winappsdk-InteractiveExperiences.
+  -->
+
+  <PropertyGroup>
+    <PackageName>winappsdk-Foundation</PackageName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- NuGet Package References -->
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Windows.SDK.CPP" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Windows.CppWinRT" GeneratePathProperty="true" />
+    <PackageDownload Include="PyWinRT" Version="[$(PyWinRTVersion)]" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
+    
+    <!-- Build dependency on InteractiveExperiences (for headers) -->
+    <ProjectReference Include="..\InteractiveExperiences\PyWinRT.Microsoft.WindowsAppSDK.InteractiveExperiences.proj" />
+  </ItemGroup>
+
+  <!-- 
+    WinMD inputs and references for code generation.
+    InputWinMD: Metadata to generate code from
+    ReferenceWinMD: Dependencies for resolution (no code generation)
+  -->
+  <ItemGroup>
+    <InputWinMD Include="$(PkgMicrosoft_WindowsAppSDK_Foundation)\metadata">
+      <PyPackageName>$(PackageName)</PyPackageName>
+    </InputWinMD>
+
+    <ReferenceWinMD Include="$(PkgMicrosoft_WindowsAppSDK_InteractiveExperiences)\metadata\10.0.18362.0">
+      <PyPackageName>winappsdk-InteractiveExperiences</PyPackageName>
+      <HeaderPath>$(MSBuildProjectDirectory)\..\InteractiveExperiences\obj\pkg\include</HeaderPath>
+    </ReferenceWinMD>
+  </ItemGroup>
+
+  <!-- Python runtime dependencies (required for type marshalling at runtime) -->
+  <ItemGroup>
+    <PythonDependency Include="winappsdk-InteractiveExperiences" />
+    <PythonDependency Include="winrt-Windows.Foundation" />
+    <PythonDependency Include="winrt-Windows.Foundation.Collections" />
+    <PythonDependency Include="winrt-Windows.Storage" />
+  </ItemGroup>
+
+</Project>

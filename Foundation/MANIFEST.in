@@ -1,0 +1,3 @@
+# Include header files needed for compilation
+recursive-include include *.h
+

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <!--
+    PyWinRT Python package for Microsoft.WindowsAppSDK.InteractiveExperiences
+    
+    This is the base package with no dependencies on other winappsdk packages.
+  -->
+
+  <PropertyGroup>
+    <PackageName>winappsdk-InteractiveExperiences</PackageName>
+    <!-- Simple single-input pattern: just set MetadataPath -->
+    <MetadataPath>$(PkgMicrosoft_WindowsAppSDK_InteractiveExperiences)\metadata\10.0.18362.0</MetadataPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- NuGet Package References -->
+    <PackageReference Include="Microsoft.Windows.SDK.CPP" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Windows.CppWinRT" GeneratePathProperty="true" />
+    <PackageDownload Include="PyWinRT" Version="[$(PyWinRTVersion)]" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
+  </ItemGroup>
+
+  <!-- Python runtime dependencies (required for type marshalling at runtime) -->
+  <ItemGroup>
+    <PythonDependency Include="winrt-Windows.Foundation" />
+    <PythonDependency Include="winrt-Windows.Foundation.Collections" />
+  </ItemGroup>
+
+</Project>
