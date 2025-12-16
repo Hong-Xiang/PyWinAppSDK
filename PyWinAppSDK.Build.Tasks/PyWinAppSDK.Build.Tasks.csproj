@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    
+    <!-- NuGet Package Metadata -->
+    <PackageId>PyWinAppSDK.Build.Tasks</PackageId>
+    <Version>0.0.1</Version>
+    <Authors>PyWinAppSDK Team</Authors>
+    <Description>MSBuild tasks for resolving WinMD references from NuGet packages for PyWinAppSDK projects</Description>
+    <PackageTags>msbuild;winmd;nuget;build-tasks;pywinrt</PackageTags>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    
+    <!-- Auto-generate package on build -->
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)..\localpackages</PackageOutputPath>
+    
+    <!-- Include build assets in the package -->
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <BuildOutputTargetFolder>lib</BuildOutputTargetFolder>
+    
+    <!-- Suppress dependency in package (build tasks shouldn't flow dependencies) -->
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Utilities.Core" />
+    <PackageReference Include="NuGet.Common" />
+    <PackageReference Include="NuGet.ProjectModel" />
+  </ItemGroup>
+
+  <!-- Include the .targets file in the NuGet package -->
+  <ItemGroup>
+    <None Include="PyWinAppSDK.Build.Tasks.targets" Pack="true" PackagePath="build" />
+    <None Include="PyWinAppSDK.Build.Tasks.targets" Pack="true" PackagePath="buildMultiTargeting" />
+  </ItemGroup>
+
+</Project>

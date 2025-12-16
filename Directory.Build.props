@@ -11,14 +11,20 @@
         <ScriptsDirectory>$(MSBuildThisFileDirectory)scripts\</ScriptsDirectory>
         <TargetPlatformVersion>10.0.26100.0</TargetPlatformVersion>
         <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
+        <PythonVersion>3.12</PythonVersion>
     </PropertyGroup>
 
     <!-- Common output paths for PyWinRT package generation -->
     <PropertyGroup>
-        <ObjPath Condition="'$(ObjPath)' == ''">$(MSBuildProjectDirectory)\obj</ObjPath>
-        <PythonPackagePath Condition="'$(PythonPackagePath)' == ''">$(ObjPath)\pkg</PythonPackagePath>
-        <PyWinRTOutputPath Condition="'$(PyWinRTOutputPath)' == ''">$(ObjPath)\gen</PyWinRTOutputPath>
-        <PyWinRTHeaderPath Condition="'$(PyWinRTHeaderPath)' == ''">$(PythonPackagePath)\include\pywinrt</PyWinRTHeaderPath>
-        <CppWinRTOutputPath Condition="'$(CppWinRTOutputPath)' == ''">$(PythonPackagePath)\include\cppwinrt</CppWinRTOutputPath>
+        <ObjPath>$(MSBuildProjectDirectory)\obj</ObjPath>
+        <PythonPackagePath>$(ObjPath)\pkg</PythonPackagePath>
+        <PyWinRTOutputPath>$(ObjPath)\gen</PyWinRTOutputPath>
+        <PyWinRTHeaderPath>$(PythonPackagePath)\include\pywinrt</PyWinRTHeaderPath>
+        <CppWinRTOutputPath>$(PythonPackagePath)\include\cppwinrt</CppWinRTOutputPath>
     </PropertyGroup>
+
+    <ItemGroup>
+        <WinMDFolder Include="metadata" />
+        <WinMDFolder Include="metadata\10.0.18362.0" />
+    </ItemGroup>
 </Project>

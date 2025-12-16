@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <!--
+    PyWinRT Python package for Microsoft.WindowsAppSDK.Foundation
+    
+    Uses:
+    - ResolveWinMDReferences task for automatic WinMD resolution
+    - winapp-sdk package for pre-generated headers
+  -->
+
+  <PropertyGroup>
+    <PackageName>winappsdk-foundation</PackageName>
+    <!-- Enable PyWinAppSDK build targets -->
+    <GeneratePyWinAppSDK>true</GeneratePyWinAppSDK>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Build tools -->
+    <PackageReference Include="Microsoft.Windows.SDK.CPP" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Windows.CppWinRT" GeneratePathProperty="true" />
+    <PackageDownload Include="PyWinRT" Version="[$(PyWinRTVersion)]" />
+    
+    <!-- The WindowsAppSDK component package to generate bindings for -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
+    
+    <!-- Build tasks for WinMD resolution -->
+    <PackageReference Include="PyWinAppSDK.Build.Tasks" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- 
+    Resolve WinMDs automatically using the build task.
+    InputPackages specifies which package(s) to generate code FROM.
+    All transitive dependencies become ReferenceWinMD automatically.
+  -->
+  <Target Name="ResolveWinMDs" BeforeTargets="BuildWinMDArguments">
+    <Message Text="==================== Resolving WinMDs for $(PackageName) ====================" Importance="high" />
+
+    <ItemGroup>
+      <WinMDFolder Include="metadata" />
+      <WinMDFolder Include="metadata\10.0.18362.0" />
+    </ItemGroup>
+
+    <ResolveWinMDReferences 
+      AssetsFilePath="$(ProjectAssetsFile)"
+      InputPackages="Microsoft.WindowsAppSDK.Foundation"
+      ExcludePackages="Microsoft.Windows.SDK.CPP"
+      WinMDFolders="@(WinMDFolder)">
+      <Output TaskParameter="InputWinMD" ItemName="ResolvedInputWinMD" />
+      <Output TaskParameter="ReferencedWinMD" ItemName="ResolvedReferencedWinMD" />
+    </ResolveWinMDReferences>
+
+    <Message Text="Input WinMDs: @(ResolvedInputWinMD->Count())" Importance="high" />
+    <Message Text="  %(ResolvedInputWinMD.Identity)" Importance="high" />
+    <Message Text="Reference WinMDs: @(ResolvedReferencedWinMD->Count())" Importance="high" />
+    <Message Text="  %(ResolvedReferencedWinMD.Identity)" Importance="high" />
+
+    <!-- Convert resolved WinMDs to InputWinMD/ReferenceWinMD format expected by Directory.Build.targets -->
+    <ItemGroup>
+      <InputWinMD Include="@(ResolvedInputWinMD)">
+        <PyPackageName>$(PackageName)</PyPackageName>
+      </InputWinMD>
+      <ReferenceWinMD Include="@(ResolvedReferencedWinMD)">
+        <PyPackageName>winappsdk</PyPackageName>
+      </ReferenceWinMD>
+    </ItemGroup>
+  </Target>
+
+  <!-- Python runtime dependencies -->
+  <ItemGroup>
+    <PythonDependency Include="winappsdk-InteractiveExperiences" />
+    <PythonDependency Include="winrt-Windows.Foundation" />
+    <PythonDependency Include="winrt-Windows.Foundation.Collections" />
+    <PythonDependency Include="winrt-Windows.Storage" />
+  </ItemGroup>
+
+</Project>

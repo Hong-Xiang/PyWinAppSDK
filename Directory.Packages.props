@@ -10,9 +10,15 @@
     <PackageVersion Include="Microsoft.Windows.SDK.CPP" Version="10.0.26100.4188" />
     <PackageVersion Include="Microsoft.Windows.CppWinRT" Version="2.0.250303.1" />
     <PackageVersion Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="1.8.251104001" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7175"></PackageVersion>
     <PackageVersion Include="Microsoft.WindowsAppSDK.Foundation" Version="1.8.251104000" />
     <PackageVersion Include="Microsoft.WindowsAppSDK.AI" Version="1.8.39" />
     <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
     <PackageVersion Include="PyWinRT" Version="[3.2.1]" />
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.3179.45" />
+    <PackageVersion Include="Nuget.ProjectModel" Version="7.0.1" />
+    <PackageVersion Include="Nuget.Common" Version="7.0.1" />
+    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="18.0.2" />
+    <PackageVersion Include="PyWinAppSDK.Build.Tasks" Version="0.0.1" />
   </ItemGroup>
 </Project>
