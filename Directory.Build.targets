@@ -141,6 +141,13 @@
     -->
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(ScriptsDirectory)copy-python-namespace.ps1&quot; -PyWinRTOutputPath &quot;$(PyWinRTOutputPath)&quot; -SafePackageName $(SafePackageName) -DestPath &quot;$(PythonPackagePath)\winappsdk&quot;" />
     <Message Text="Copied .py files to winappsdk namespace" Importance="high" />
+    
+    <!-- Remove microsoft folder from winappsdk_Component after copying to shared namespace -->
+    <PropertyGroup>
+      <ComponentMicrosoftPath>$(PythonPackagePath)\$(SafePackageName)\microsoft</ComponentMicrosoftPath>
+    </PropertyGroup>
+    <RemoveDir Directories="$(ComponentMicrosoftPath)" Condition="Exists('$(ComponentMicrosoftPath)')" />
+    <Message Text="Removed duplicate microsoft folder from $(SafePackageName)" Importance="high" Condition="Exists('$(ComponentMicrosoftPath)')" />
 
     <!-- Copy *.cpp files (extension sources) to package root with stripped version folder -->
     <ItemGroup>

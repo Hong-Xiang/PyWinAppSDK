@@ -1,3 +1,0 @@
-include README.md
-recursive-include * *.pyi
-include */py.typed

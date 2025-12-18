@@ -116,7 +116,8 @@
     <MakeDir Directories="$(PyWinRTHeaderPath)" />
 
     <PropertyGroup>
-      <PyWinRTArgs> --input $(PackageName);$(WinMDStagingPath) --reference winrt;$(WinSDKMetadataPath) --output $(PyWinRTOutputPath) --header-path $(PyWinRTHeaderPath)</PyWinRTArgs>
+      <!-- Use 'winappsdk' prefix for qualified names in headers so runtime resolution works with shared namespace -->
+      <PyWinRTArgs> --input winappsdk;$(WinMDStagingPath) --reference winrt;$(WinSDKMetadataPath) --output $(PyWinRTOutputPath) --header-path $(PyWinRTHeaderPath)</PyWinRTArgs>
     </PropertyGroup>
 
     <Message Text="PyWinRT command: $(PyWinRTArgs)" Importance="high" />

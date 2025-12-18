@@ -57,7 +57,7 @@ archs = ["x86", "AMD64", "ARM64"]
 SETUP_PY_TEMPLATE = """\
 # WARNING: Please don't edit this file. It was automatically generated.
 # Merged package setup.py that builds ALL extensions in a single package
-from setuptools import Extension, setup, find_packages
+from setuptools import Extension, setup, find_packages, find_namespace_packages
 from setuptools.command.build_ext import build_ext
 from winrt_sdk import get_include_dirs as get_winrt_include_dirs
 from winappsdk_headers import get_include_dirs as get_winappsdk_include_dirs
@@ -98,7 +98,12 @@ extensions = [
 setup(
     cmdclass={{"build_ext": build_ext_ex}},
     ext_modules=extensions,
-    packages=find_packages(where=".", include=["{safe_prefix}", "{safe_prefix}.*", "winappsdk", "winappsdk.*"]),
+    # Component-specific packages (regular packages)
+    packages=(
+        find_packages(where=".", include=["{safe_prefix}", "{safe_prefix}.*"]) +
+        # Namespace packages (PEP 420) - allows multiple wheels to contribute to winappsdk.*
+        find_namespace_packages(where=".", include=["winappsdk", "winappsdk.*"])
+    ),
 )
 """
 

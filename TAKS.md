@@ -14,16 +14,17 @@ This document outlines the technical design and implementation plan for PyWinApp
 
 ---
 
-## ✅ CONFIRMED ARCHITECTURE (December 12, 2025 - Updated)
+## ✅ CONFIRMED ARCHITECTURE
 
-### Key Insight: Shared PyPackage Name
+### Key Insight: Dual Package Structure
 
-**All component packages use `winappsdk` as the PyPackage name for PyWinRT generation.**
+**Component packages generate Python namespace modules in a shared `winappsdk/` folder, while keeping binaries in component-specific `winappsdk_<Component>/` folders.**
 
 This means:
-- Generated code imports from `winappsdk.microsoft.windows.*` directly
+- Generated code imports from `winappsdk.microsoft.*` directly
 - No metapackage re-export layer needed!
-- Separate wheels share the `winappsdk/` namespace via PEP 420
+- Python namespace modules (`.py` files) go to shared `winappsdk/` folder
+- Type stubs (`.pyi`) and native extensions (`.pyd`) stay in `winappsdk_<Component>/` folder
 - Native extensions have unique names (based on full namespace)
 
 ### Two-Layer Package Architecture (Simplified!)
@@ -60,12 +61,25 @@ This means:
 ```python
 # These imports work the same whether user installed:
 # - pip install winappsdk-Foundation
-# - pip install winappsdk-AI  
+# - pip install winappsdk-InteractiveExperiences  
 # - pip install winappsdk (metapackage with all dependencies)
 
 from winappsdk.microsoft.windows.applifecycle import AppInstance
 from winappsdk.microsoft.windows.ai import AIFeatureReadyResult
 from winappsdk.microsoft.ui.composition import Compositor
+from winappsdk.microsoft.ui.windowing import AppWindow
+
+# Or 
+from winrt.microsoft.windows.applifecycle import AppInstance
+from winrt.microsoft.windows.ai import AIFeatureReadyResult
+from winrt.microsoft.ui.composition import Compositor
+from winrt.microsoft.ui.windowing import AppWindow
+```
+
+instead of 
+```python
+# OLD (requires component package name prefix, or metapackage re-export layer to unify)
+from winappsdk_Foundation.microsoft.windows.applifecycle import AppInstance
 ```
 
 ### Why This Works
@@ -139,6 +153,8 @@ winappsdk-Foundation/                        # PyPI distribution name
 ├── setup.py
 ├── py.Microsoft.Windows.AppLifecycle.cpp    # C++ source
 ├── py.Microsoft.Windows.ApplicationModel.Resources.cpp
+|---winappsdk_Foundation/
+|   ├── native extensions
 └── winappsdk/                               # NO __init__.py at root! (PEP 420)
     ├── _winappsdk_microsoft_windows_applifecycle.pyi
     ├── _winappsdk_microsoft_windows_applicationmodel_resources.pyi
@@ -225,7 +241,7 @@ name = "winappsdk-Foundation"  # Distribution name (for PyPI)
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["winappsdk*"]       # Find all winappsdk.* packages
+include = ["winappsdk_Foundation", "winappsdk"]       # Find all winappsdk.* packages
 
 # For namespace package support
 [tool.setuptools.package-dir]
@@ -313,23 +329,32 @@ Users get clear error messages when a component isn't installed.
 
 ## 6. Implementation Priorities
 
-### Phase 1: Update Build Configuration (NEXT)
-- [ ] Update all `.proj` files: `<PyPackageName>winappsdk</PyPackageName>`
-- [ ] Update all `<ReferenceWinMD>` entries to use `winappsdk`
-- [ ] Update `generate-package.py` to NOT create root `__init__.py`
-- [ ] Update `pyproject.toml` template for namespace package support
-- [ ] Test building Foundation with new configuration
-- [ ] Verify import works: `from winappsdk.microsoft.windows.applifecycle import AppInstance`
+### Phase 1: Update Build Configuration (✅ COMPLETED for InteractiveExperiences)
+- [✅] Remove `GenerateCppWinRT` dependency from build targets (headers now from winappsdk_headers)
+- [✅] Create `scripts/copy-python-namespace.ps1` to extract and copy namespace modules
+- [✅] Update `Directory.Build.targets` to use dual-folder structure
+- [✅] Update `generate-package.py` to handle both `winappsdk/` and `winappsdk_<Component>/`
+- [✅] Test building InteractiveExperiences with new configuration
+- [✅] Verify imports work: `from winappsdk.microsoft.ui.windowing import AppWindow`
+- [✅] Test with uv: `uv run --with winappsdk_interactiveexperiences-3.2.1-cp313-cp313-win_amd64.whl python test_import.py`
 
-### Phase 2: Multi-Component Testing
-- [ ] Build AI with Foundation as reference (both using `winappsdk`)
-- [ ] Test installing both wheels and verify namespace merging
+### Phase 2: Multi-Component Testing (\u2705 COMPLETED - December 16, 2025)
+- [\u2705] Apply same refactoring to Foundation package
+- [\u2705] Apply same refactoring to AI package  
+- [\u2705] Build AI with Foundation as reference
+- [\u2705] Updated Directory.Build.targets to remove microsoft folder from component packages after copying to shared namespace
+- [\u2705] Test Foundation imports: `from winappsdk.microsoft.windows.applifecycle import AppInstance`
+- [\u2705] Successfully built wheels for Foundation and AI with dual-folder structure
+- [ ] Test installing all three wheels together and verify namespace merging
 - [ ] Verify native extensions don't conflict
+- [ ] Test cross-component imports in integrated environment
 
-### Phase 3: Distribution
+### Phase 3: Distribution (PLANNED)
 - [ ] Create metapackage (pure dependency aggregator)
+- [ ] Update `winappsdk_headers` to use unified structure
 - [ ] Test on PyPI (test.pypi.org)
 - [ ] Document installation patterns
+- [ ] Create migration guide from old structure
 
 ---
 
