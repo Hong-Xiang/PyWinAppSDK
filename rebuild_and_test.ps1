@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$root = "D:\Code\PyWinAppSDK"
+$root = $PSScriptRoot
 
 Write-Host "`n╔═══════════════════════════════════════════════╗" -ForegroundColor Cyan
 Write-Host "║   PyWinAppSDK Full Rebuild and Test          ║" -ForegroundColor Cyan

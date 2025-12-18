@@ -20,7 +20,7 @@
 
   <!-- Common package files -->
   <ItemGroup>
-    <PythonPackageFile Include="$(MSBuildProjectDirectory)\MANIFEST.in" Condition="Exists('$(MSBuildProjectDirectory)\MANIFEST.in')" />
+    <!-- <PythonPackageFile Include="$(MSBuildProjectDirectory)\MANIFEST.in" Condition="Exists('$(MSBuildProjectDirectory)\MANIFEST.in')" /> -->
     <PythonPackageFile Include="$(MSBuildProjectDirectory)\README.md" Condition="Exists('$(MSBuildProjectDirectory)\README.md')" />
   </ItemGroup>
 
@@ -91,6 +91,9 @@
     <Exec
       Command="$(PyWinRTExe) $(PyWinRTInputArgs) $(PyWinRTRefArgs) --output $(PyWinRTOutputPath) --header-path $(PyWinRTHeaderPath)"
       WorkingDirectory="$(MSBuildProjectDirectory)" />
+    
+    <!-- Remove generated headers to use the ones from winappsdk-headers package instead -->
+    <RemoveDir Directories="$(PyWinRTHeaderPath)" Condition="Exists('$(PyWinRTHeaderPath)')" />
   </Target>
 
   <!-- Collect namespace names from generated .cpp files -->

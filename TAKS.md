@@ -1,20 +1,48 @@
-# PyWinAppSDK - Development Roadmap & Technical Specifications
+# PyWinAppSDK - Project Status & Roadmap
 
-## Overview
-
-This document outlines the technical design and implementation plan for PyWinAppSDK, focusing on package organization, dependency resolution, and Python binding generation for Windows App SDK components.
-
-## Core Design Principles
-
-1. **WindowsAppSDK Focus**: Pure WindowsAppSDK packages without Windows Platform SDK coupling
-2. **Component Separation**: Support self-contained deployment with installable component packages
-3. **Unified Namespace**: Clean `winappsdk.microsoft.windows.*` imports directly (no re-export layer!)
-4. **PEP 420 Namespace Packages**: Multiple wheels contribute to same `winappsdk/` namespace root
-5. **No PyWinRT Modifications**: Use same `winappsdk` PyPackage for all components
+## 🎯 Core Objective
+Create a modular Python projection for Windows App SDK using a **Unified Namespace** (`winappsdk.*`) while maintaining **Component Separation** (individual wheels for AI, Foundation, etc.).
 
 ---
 
-## ✅ CONFIRMED ARCHITECTURE
+## 🏗️ Confirmed Architecture: Dual-Folder Structure
+To support PEP 420 Namespace Packages and avoid binary conflicts:
+1.  **Shared Namespace (`winappsdk/`)**: Contains only `.py` files. Multiple wheels contribute to this folder.
+2.  **Component Folder (`winappsdk_<Comp>/`)**: Contains native extensions (`.pyd`) and type stubs (`.pyi`).
+3.  **Import Pattern**: Users always import from `winappsdk.microsoft.windows.*`.
+
+---
+
+## 📊 Implementation Status
+
+### Phase 1: Build Infrastructure (✅ COMPLETED)
+- [x] **Unified Headers**: `Headers.proj` generates a single `winappsdk-headers` package.
+- [x] **Build Tasks**: C# task for automated WinMD dependency resolution.
+- [x] **Shared Targets**: `Directory.Build.targets` handles code gen, namespace restructuring, and wheel building.
+- [x] **Automation Scripts**: `copy-python-namespace.ps1` and `generate-package.py` for PEP 420 compliance.
+
+### Phase 2: Component Refactoring (✅ COMPLETED)
+- [x] **InteractiveExperiences**: Base component with UI and Windowing support.
+- [x] **Foundation**: Core app lifecycle and resource management.
+- [x] **AI**: Machine Learning and OCR features (depends on Foundation).
+- [x] **Cross-Referencing**: Components correctly reference headers from dependencies.
+
+### Phase 3: Integration & Validation (🔄 IN PROGRESS)
+- [ ] **Multi-Wheel Testing**: Install all components together and verify namespace merging.
+- [ ] **Conflict Verification**: Ensure native extensions from different wheels load correctly.
+- [ ] **Metapackage**: Create a pure dependency aggregator `pip install winappsdk`.
+
+### Phase 4: Distribution & Docs (📅 PLANNED)
+- [ ] **PyPI Deployment**: Test on `test.pypi.org`.
+- [ ] **DLL Loading**: Implement `os.add_dll_directory` logic for runtime dependencies.
+- [ ] **Documentation**: Installation guide and migration path from `winrt-sdk`.
+
+---
+
+## 🛠️ Technical Notes
+- **PEP 420**: No `__init__.py` files are allowed in `winappsdk/` or `winappsdk/microsoft/` to allow merging.
+- **Native Naming**: Extensions are named `_winappsdk_<comp>_microsoft_...pyd` to ensure uniqueness.
+- **Build Tooling**: Uses `uv` for high-speed wheel compilation and dependency management.
 
 ### Key Insight: Dual Package Structure
 
