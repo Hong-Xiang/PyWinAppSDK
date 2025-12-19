@@ -13,7 +13,7 @@ if (Test-Path $testEnv) {
 
 # Create fresh uv-managed virtual environment with Python 3.11 to match the wheels
 Write-Host "Creating fresh virtual environment with uv (Python 3.11)..." -ForegroundColor Cyan
-uv venv $testEnv --python 3.9
+uv venv $testEnv --python 3.11
 if ($LASTEXITCODE -ne 0) { Write-Error "Failed to create venv with uv"; exit 1 }
 
 # Verify Python version
