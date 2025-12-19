@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!--
+    This file is included automatically when the PyWinAppSDK.Build.Tasks NuGet package is referenced.
+    It registers the ResolveWinMDReferences task for use in consuming projects.
+  -->
+
+  <PropertyGroup>
+    <!-- Find the DLL in any net8.0* subfolder -->
+    <_PyWinAppSDKBuildTasksPath Condition="Exists('$(MSBuildThisFileDirectory)..\lib\net8.0\PyWinAppSDK.Build.Tasks.dll')">$(MSBuildThisFileDirectory)..\lib\net8.0\PyWinAppSDK.Build.Tasks.dll</_PyWinAppSDKBuildTasksPath>
+    <_PyWinAppSDKBuildTasksPath Condition="'$(_PyWinAppSDKBuildTasksPath)' == '' AND Exists('$(MSBuildThisFileDirectory)..\lib\net8.0-windows10.0.26100\PyWinAppSDK.Build.Tasks.dll')">$(MSBuildThisFileDirectory)..\lib\net8.0-windows10.0.26100\PyWinAppSDK.Build.Tasks.dll</_PyWinAppSDKBuildTasksPath>
+  </PropertyGroup>
+
+  <!-- Register the ResolveWinMDReferences task -->
+  <UsingTask TaskName="PyWinAppSDK.Build.Tasks.ResolveWinMDReferences"
+             AssemblyFile="$(_PyWinAppSDKBuildTasksPath)" />
+
+  <!-- Optional: Add a target that can be called to resolve WinMDs automatically -->
+  <Target Name="ResolveWinMDReferencesTarget" 
+          AfterTargets="ResolveProjectReferences"
+          Condition="'$(EnablePyWinAppSDKResolveWinMDs)' == 'true'">
+    
+    <!-- Call the task -->
+    <ResolveWinMDReferences AssetsFilePath="$(ProjectAssetsFile)"
+                            ExcludePackages="$(PyWinAppSDKExcludePackages)"
+                            InputPackages="$(PyWinAppSDKInputPackages)"
+                            WinMDFolders="$(PyWinAppSDKWinMDFolders)">
+      <Output TaskParameter="InputWinMD" ItemName="PyWinAppSDKInputWinMD" />
+      <Output TaskParameter="ReferencedWinMD" ItemName="PyWinAppSDKReferencedWinMD" />
+    </ResolveWinMDReferences>
+
+    <!-- Display summary -->
+    <Message Text="PyWinAppSDK: Resolved $(PyWinAppSDKInputWinMD.Count()) input WinMDs and $(PyWinAppSDKReferencedWinMD.Count()) referenced WinMDs"
+             Importance="high"
+             Condition="'$(PyWinAppSDKVerbose)' == 'true'" />
+  </Target>
+
+</Project>

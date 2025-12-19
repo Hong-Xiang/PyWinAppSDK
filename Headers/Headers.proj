@@ -1,0 +1,215 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <!--
+    PySDK: Unified header-only package for WindowsAppSDK
+    
+    This package collects all transitive WinMD files from WindowsAppSDK and generates
+    both CppWinRT and PyWinRT headers. It serves as a base dependency for component packages,
+    providing a complete set of headers without generating Python bindings or wheels.
+    
+    Component packages (Foundation, AI, etc.) will reference this package to get all
+    necessary headers for compilation without duplicating header generation.
+  -->
+
+  <PropertyGroup>
+    <PackageName>winappsdk-headers</PackageName>
+    <!-- Enable PyWinAppSDK build targets -->
+    <GeneratePyWinAppSDK>false</GeneratePyWinAppSDK>
+    <!-- Staging folder for consolidated WinMDs -->
+    <WinMDStagingPath>$(ObjPath)\winmd</WinMDStagingPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Build tools and core SDK -->
+    <PackageReference Include="Microsoft.Windows.SDK.CPP" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Windows.CppWinRT" GeneratePathProperty="true" />
+    <PackageDownload Include="PyWinRT" Version="[$(PyWinRTVersion)]" />
+
+    <!-- All WindowsAppSDK packages to collect transitive WinMDs -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" GeneratePathProperty="true"
+      ExcludeAssets="build;buildTransitive" />
+
+    <!-- WebView2 is required for WinUI Xaml (Microsoft.UI.Xaml.Controls.IWebView2) -->
+    <PackageReference Include="Microsoft.Web.WebView2" GeneratePathProperty="true"
+      ExcludeAssets="build;buildTransitive" />
+
+    <!-- Build tasks for WinMD resolution -->
+    <PackageReference Include="PyWinAppSDK.Build.Tasks" PrivateAssets="all" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CppWinRTExe>$(PkgMicrosoft_Windows_CppWinRT)\bin\cppwinrt.exe</CppWinRTExe>
+    <WinSDKMetadataPath>$(PkgMicrosoft_Windows_SDK_CPP)\c\References\$(TargetPlatformVersion)</WinSDKMetadataPath>
+  </PropertyGroup>
+
+
+  <!-- 
+    Define the build target that resolves WinMDs, generates headers, and packages them.
+    This runs during Build but does NOT generate a Python wheel (only headers).
+  -->
+  <Target Name="ResolveAllWinMDs">
+    <Message Text="==================== PySDK: Resolving WindowsAppSDK WinMDs ===================="
+      Importance="high" />
+
+
+    <!-- Resolve all WinMD files from WindowsAppSDK packages -->
+    <ResolveWinMDReferences
+      AssetsFilePath="$(ProjectAssetsFile)"
+      InputPackages="Microsoft.WindowsAppSDK"
+      ExcludePackages="Microsoft.Windows.SDK.CPP"
+      WinMDFolders="@(WinMDFolder)">
+      <Output TaskParameter="InputWinMD" ItemName="ResolvedInputWinMD" />
+      <Output TaskParameter="ReferencedWinMD" ItemName="ResolvedReferencedWinMD" />
+    </ResolveWinMDReferences>
+
+    <!-- Display resolution results -->
+    <Message Text="=== INPUT WinMDs (Direct Dependencies): @(ResolvedInputWinMD->Count()) ==="
+      Importance="high" />
+    <Message Text="  %(ResolvedInputWinMD.Identity)" Importance="high" />
+
+    <Message Text="" Importance="high" />
+    <Message Text="=== REFERENCED WinMDs (Transitive): @(ResolvedReferencedWinMD->Count()) ==="
+      Importance="high" />
+    <Message Text="  %(ResolvedReferencedWinMD.Identity)" Importance="high" />
+
+    <!-- 
+      For PySDK, we want to generate headers for ALL WinMDs (both direct and transitive).
+      Copy all WinMDs to a staging folder so we can pass a single folder path to the tools.
+    -->
+    <ItemGroup>
+      <!-- All WindowsAppSDK WinMDs (both direct and transitive) are inputs -->
+      <InputWinMD Include="@(ResolvedInputWinMD)" />
+      <InputWinMD Include="@(ResolvedReferencedWinMD)" />
+
+      <!-- External dependencies: WebView2 (also input) -->
+      <InputWinMD Include="$(PkgMicrosoft_Web_WebView2)\lib\Microsoft.Web.WebView2.Core.winmd" />
+
+      <!-- Remove WindowsSDK from inputs if it got included somehow - it's a reference, not input -->
+      <InputWinMD Remove="$(WinSDKMetadataPath)" />
+    </ItemGroup>
+
+    <!-- Note: WindowsSDK will be added as ReferenceWinMD by BuildWinMDArguments target in
+    Directory.Build.targets -->
+
+    <!-- Stage all WinMDs to a single folder (except WindowsSDK which is a reference, not input) -->
+    <ItemGroup>
+      <WinMDToStage Include="@(InputWinMD)"
+        Condition="!$([System.String]::Copy('%(Identity)').Contains('microsoft.windows.sdk.cpp'))" />
+    </ItemGroup>
+
+    <Message Text="" Importance="high" />
+    <Message Text="=== Staging @(WinMDToStage->Count()) WinMDs to $(WinMDStagingPath) ==="
+      Importance="high" />
+
+    <MakeDir Directories="$(WinMDStagingPath)" />
+    <Copy SourceFiles="@(WinMDToStage)" DestinationFolder="$(WinMDStagingPath)"
+      SkipUnchangedFiles="true" />
+
+    <!-- ===== Build Arguments for CppWinRT and PyWinRT ===== -->
+    <!-- Set tool paths -->
+  </Target>
+
+  <!-- Generate PyWinRT headers using staged WinMDs -->
+  <Target Name="GeneratePyWinRTHeaders" DependsOnTargets="ResolveAllWinMDs">
+    <Message Text="==================== Generating PyWinRT Headers ===================="
+      Importance="high" />
+
+    <MakeDir Directories="$(PyWinRTHeaderPath)" />
+
+    <PropertyGroup>
+      <!-- Use 'winappsdk' prefix for qualified names in headers so runtime resolution works with shared namespace -->
+      <PyWinRTArgs> --input winappsdk;$(WinMDStagingPath) --reference winrt;$(WinSDKMetadataPath) --output $(PyWinRTOutputPath) --header-path $(PyWinRTHeaderPath)</PyWinRTArgs>
+    </PropertyGroup>
+
+    <Message Text="PyWinRT command: $(PyWinRTArgs)" Importance="high" />
+    <Exec Command="$(PyWinRTExe) $(PyWinRTArgs)" WorkingDirectory="$(MSBuildProjectDirectory)" />
+
+    <Message Text="PyWinRT headers generated at: $(PyWinRTHeaderPath)" Importance="high" />
+  </Target>
+
+  <!-- Generate C++/WinRT projection headers (reuse shared logic from Directory.Build.targets) -->
+  <Target Name="GenerateCppWinRTHeaders" DependsOnTargets="ResolveAllWinMDs">
+    <Message Text="==================== Generating CppWinRT Headers ===================="
+      Importance="high" />
+
+    <MakeDir Directories="$(CppWinRTOutputPath)" />
+
+    <Message Text="CppWinRT exe : $(CppWinRTExe)" Importance="high" />
+    <Message
+      Text="CppWinRT args: -input $(WinMDStagingPath) -reference $(WinSDKMetadataPath) -output $(CppWinRTOutputPath)"
+      Importance="high" />
+    <Exec
+      Command="$(CppWinRTExe) -input $(WinMDStagingPath) -reference $(WinSDKMetadataPath) -output $(CppWinRTOutputPath)"
+      WorkingDirectory="$(MSBuildProjectDirectory)" />
+
+    <Message Text="CppWinRT headers generated at: $(CppWinRTOutputPath)" Importance="high" />
+  </Target>
+
+  <!-- Generate Python package with headers for downstream consumption -->
+  <Target Name="GenerateHeaderPackage"
+    AfterTargets="Build"
+    DependsOnTargets="ResolveAllWinMDs;GenerateCppWinRTHeaders;GeneratePyWinRTHeaders">
+    <Message Text="==================== PySDK: Generating Header Package ===================="
+      Importance="high" />
+
+    <PropertyGroup>
+      <SafePackageName>$(PackageName.Replace('-', '_'))</SafePackageName>
+      <HeaderPackageIncludeDir>$(PythonPackagePath)\$(SafePackageName)\include</HeaderPackageIncludeDir>
+      <HeaderPackageVersion>$(PyWinRTVersion)</HeaderPackageVersion>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(PythonPackagePath)" />
+    <MakeDir Directories="$(PythonPackagePath)\$(SafePackageName)" />
+    <MakeDir Directories="$(HeaderPackageIncludeDir)" />
+
+    <ItemGroup>
+      <HeaderPackageStaticFile Include="$(MSBuildProjectDirectory)\pyproject.toml" />
+      <HeaderPackageStaticFile Include="$(MSBuildProjectDirectory)\README.md"
+        Condition="Exists('$(MSBuildProjectDirectory)\README.md')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(HeaderPackageStaticFile)" DestinationFolder="$(PythonPackagePath)" SkipUnchangedFiles="true" />
+
+    <ItemGroup>
+      <HeaderPackageSources Include="$(MSBuildProjectDirectory)\winappsdk_headers\**\*.py" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(HeaderPackageSources)"
+      DestinationFiles="@(HeaderPackageSources->'$(PythonPackagePath)\$(SafePackageName)\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+
+    <ItemGroup>
+      <HeaderVersionFileLines Include="# Auto-generated from Headers.proj" />
+      <HeaderVersionFileLines Include="__version__ = &quot;$(HeaderPackageVersion)&quot;" />
+    </ItemGroup>
+    <WriteLinesToFile
+      File="$(PythonPackagePath)\version.txt"
+      Lines="$(PyWinRTVersion)"
+      Overwrite="true" />
+
+    <!-- Copy generated headers into package include tree -->
+    <ItemGroup>
+      <CppWinRTHeaders Include="$(CppWinRTOutputPath)\**\*.*" />
+      <PyWinRTHeaders Include="$(PyWinRTHeaderPath)\**\*.*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(CppWinRTHeaders)"
+      DestinationFiles="@(CppWinRTHeaders->'$(HeaderPackageIncludeDir)\cppwinrt\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+    <Copy
+      SourceFiles="@(PyWinRTHeaders)"
+      DestinationFiles="@(PyWinRTHeaders->'$(HeaderPackageIncludeDir)\pywinrt\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+
+    <Exec Command="uv build --out-dir $(LocalWheelDirectory)"
+      WorkingDirectory="$(PythonPackagePath)">
+      <Output TaskParameter="ExitCode" PropertyName="UvBuildExitCode" />
+    </Exec>
+
+  </Target>
+
+  <!-- Clean target -->
+  <Target Name="PySDKClean" AfterTargets="Clean">
+    <Message Text="Cleaning PySDK output..." Importance="high" />
+    <RemoveDir Directories="$(ObjPath)" />
+  </Target>
+
+</Project>

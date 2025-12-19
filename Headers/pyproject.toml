@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=78"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "winappsdk-headers"
+dynamic = ["version"]
+description = "Header files for WindowsAppSDK Python bindings"
+readme = "README.md"
+license = "MIT"
+classifiers = [
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Intended Audience :: Developers",
+    "Development Status :: 4 - Beta",
+]
+requires-python = ">=3.9"
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/user/PyWinAppSDK"
+
+[tool.setuptools]
+packages = ["winappsdk_headers"]
+
+[tool.setuptools.dynamic]
+version = { file = "version.txt" }
+
+[tool.setuptools.package-data]
+"winappsdk_headers" = [
+    "include/**/*.h",
+    "include/**/*.hpp",
+]

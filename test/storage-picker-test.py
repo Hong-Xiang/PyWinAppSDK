@@ -268,8 +268,9 @@ def initialize_windows_app_sdk(major_minor_version: str = "1.8", min_version: st
 
 
 # Now import the Windows App SDK types
-from winappsdk_InteractiveExperiences.microsoft.ui import WindowId
-from winappsdk_Foundation.microsoft.windows.storage.pickers import FileOpenPicker
+# These packages use shared namespace packages, so import from winappsdk.* not winappsdk_*.
+from winappsdk.microsoft.ui import WindowId
+from winappsdk.microsoft.windows.storage.pickers import FileOpenPicker
 
 
 async def pick_single_file():

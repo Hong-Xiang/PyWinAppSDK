@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "pywinrt": {
+      "version": "3.2.1",
+      "commands": [
+        "pywinrt"
+      ],
+      "rollForward": false
+    }
+  }
+}
