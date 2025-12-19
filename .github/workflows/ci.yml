@@ -32,3 +32,19 @@ jobs:
     - name: Run Rebuild and Test Script
       shell: pwsh
       run: .\rebuild_and_test.ps1
+
+    - name: Upload Wheels
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: wheels
+        path: wheels/*.whl
+        retention-days: 5
+
+    - name: Upload NuGet Packages
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: localpackages
+        path: localpackages/*.nupkg
+        retention-days: 5
