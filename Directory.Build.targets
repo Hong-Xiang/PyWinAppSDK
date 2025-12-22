@@ -233,25 +233,19 @@
   </Target>
 
 
-  <!-- Generate pyproject.toml and setup.py -->
+  <!-- Prepare Python package files -->
   <Target Name="GeneratePythonProjectFiles" DependsOnTargets="MergePyWinRTResults;CollectNamespaces">
-    <Message Text="==================== Generating Merged Package Files ====================" Importance="high" />
+    <Message Text="==================== Preparing Package Files ====================" Importance="high" />
 
-    <!-- Build namespace and dependency arguments for the script -->
-    <PropertyGroup>
-      <NamespaceArgs>@(Namespace->'--namespace %(NamespaceValue)', ' ')</NamespaceArgs>
-      <DependencyArgs>@(PythonDependency->'--dependency %(Identity)', ' ')</DependencyArgs>
-    </PropertyGroup>
+    <Message Text="Preparing package with @(Namespace->Count()) namespace(s)" Importance="high" />
 
-    <Message Text="Generating merged package with @(Namespace->Count()) namespace(s)" Importance="high" />
-    <Message Text="Dependencies: @(PythonDependency->Count()) package(s)" Importance="high" Condition="'@(PythonDependency)' != ''" />
+    <!-- Copy static pyproject.toml from project directory -->
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\pyproject.toml" DestinationFolder="$(PythonPackagePath)" SkipUnchangedFiles="false" />
+    
+    <!-- Write version to version.txt for setuptools dynamic version -->
+    <WriteLinesToFile File="$(PythonPackagePath)\version.txt" Lines="$(PyWinRTVersion)" Overwrite="true" />
 
-    <!-- Generate merged package using the script -->
-    <Exec
-      Command="python $(ScriptsDirectory)generate-package.py $(PythonPackagePath) --package-prefix $(PackageName) --version $(PyWinRTVersion) $(NamespaceArgs) $(DependencyArgs)"
-      WorkingDirectory="$(PythonPackagePath)" />
-
-    <!-- Copy package files (MANIFEST.in, README.md) from project directory -->
+    <!-- Copy package files (README.md) from project directory -->
     <Copy SourceFiles="@(PythonPackageFile)" DestinationFolder="$(PythonPackagePath)" SkipUnchangedFiles="true" />
   </Target>
 
@@ -261,24 +255,26 @@
 
     <MakeDir Directories="$(LocalWheelDirectory)" Condition="!Exists('$(LocalWheelDirectory)')" />
 
-    <!-- Use a short temp directory to avoid Windows path length issues during C++ compilation -->
+    <!-- Commented out: Short temp directory was used to avoid Windows path length issues during C++ compilation -->
+    <!-- This caused conflicts with parallel builds. Restructured build folder should handle long paths better. -->
+    <!--
     <PropertyGroup>
       <ShortBuildPath>$(TEMP)\pb</ShortBuildPath>
     </PropertyGroup>
     
-    <!-- Clean and copy package to short path -->
     <RemoveDir Directories="$(ShortBuildPath)" />
     <MakeDir Directories="$(ShortBuildPath)" />
     <Exec Command="robocopy &quot;$(PythonPackagePath)&quot; &quot;$(ShortBuildPath)&quot; /E /NFL /NDL /NJH /NJS /NC /NS /NP" IgnoreExitCode="true" />
+    -->
     
-    <!-- Build from the short path. Use PythonPath property if specified for cross-architecture builds -->
+    <!-- Build directly from package path. Use PythonPath property if specified for cross-architecture builds -->
     <!-- Use find-links to find local winapp-sdk and winrt-sdk wheels -->
     <PropertyGroup>
       <UvFindLinks>--find-links $(LocalWheelDirectory)</UvFindLinks>
       <UvBuildCommand Condition="'$(PythonPath)' != ''">uv build --wheel --python &quot;$(PythonPath)&quot; $(UvFindLinks) --out-dir $(LocalWheelDirectory)</UvBuildCommand>
       <UvBuildCommand Condition="'$(PythonPath)' == ''">uv build --wheel $(UvFindLinks) --out-dir $(LocalWheelDirectory)</UvBuildCommand>
     </PropertyGroup>
-    <Exec Command="$(UvBuildCommand)" WorkingDirectory="$(ShortBuildPath)" />
+    <Exec Command="$(UvBuildCommand)" WorkingDirectory="$(PythonPackagePath)" />
 
     <ItemGroup>
       <WheelFiles Include="$(LocalWheelDirectory)\*.whl" />

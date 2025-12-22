@@ -22,10 +22,6 @@
     <PackageReference Include="Microsoft.WindowsAppSDK.AI" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
     <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
     <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
-    
-    <!-- Build dependencies (for headers) -->
-    <ProjectReference Include="..\InteractiveExperiences\PyWinRT.Microsoft.WindowsAppSDK.InteractiveExperiences.proj" />
-    <ProjectReference Include="..\Foundation\PyWinRT.Microsoft.WindowsAppSDK.Foundation.proj" />
   </ItemGroup>
 
   <!-- 

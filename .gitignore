@@ -209,3 +209,5 @@ __marimo__/
 packages/
 obj/
 bin/
+
+test/uv.lock

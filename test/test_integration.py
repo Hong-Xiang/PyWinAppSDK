@@ -28,9 +28,13 @@ try:
     
     import winappsdk.microsoft.ui.windowing
     print("✓ winappsdk.microsoft.ui.windowing")
+    from winappsdk.microsoft.ui.windowing import AppWindow
+    print("  ✓ Class AppWindow available")
     
     import winappsdk.microsoft.ui.composition
     print("✓ winappsdk.microsoft.ui.composition")
+    from winappsdk.microsoft.ui.composition import Compositor
+    print("  ✓ Class Compositor available")
     
     import winappsdk.microsoft.ui.dispatching
     print("✓ winappsdk.microsoft.ui.dispatching")
@@ -48,12 +52,16 @@ try:
     
     import winappsdk.microsoft.windows.applifecycle
     print("✓ winappsdk.microsoft.windows.applifecycle")
+    from winappsdk.microsoft.windows.applifecycle import AppInstance
+    print("  ✓ Class AppInstance available")
     
     import winappsdk.microsoft.windows.applicationmodel.dynamicdependency
     print("✓ winappsdk.microsoft.windows.applicationmodel.dynamicdependency")
     
     import winappsdk.microsoft.windows.applicationmodel.resources
     print("✓ winappsdk.microsoft.windows.applicationmodel.resources")
+    from winappsdk.microsoft.windows.applicationmodel.resources import ResourceManager
+    print("  ✓ Class ResourceManager available")
     
     import winappsdk.microsoft.windows.appnotifications
     print("✓ winappsdk.microsoft.windows.appnotifications")

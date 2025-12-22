@@ -21,9 +21,6 @@
     <PackageDownload Include="PyWinRT" Version="[$(PyWinRTVersion)]" />
     <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
     <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
-    
-    <!-- Build dependency on InteractiveExperiences (for headers) -->
-    <ProjectReference Include="..\InteractiveExperiences\PyWinRT.Microsoft.WindowsAppSDK.InteractiveExperiences.proj" />
   </ItemGroup>
 
   <!-- 

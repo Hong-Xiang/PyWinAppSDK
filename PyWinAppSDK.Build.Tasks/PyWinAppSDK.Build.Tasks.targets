@@ -11,9 +11,15 @@
     <_PyWinAppSDKBuildTasksPath Condition="'$(_PyWinAppSDKBuildTasksPath)' == '' AND Exists('$(MSBuildThisFileDirectory)..\lib\net8.0-windows10.0.26100\PyWinAppSDK.Build.Tasks.dll')">$(MSBuildThisFileDirectory)..\lib\net8.0-windows10.0.26100\PyWinAppSDK.Build.Tasks.dll</_PyWinAppSDKBuildTasksPath>
   </PropertyGroup>
 
+  <!-- Debug: Show path resolution -->
+  <Target Name="ShowPyWinAppSDKTaskPath" BeforeTargets="Build">
+    <Message Text="PyWinAppSDK.Build.Tasks path: $(_PyWinAppSDKBuildTasksPath)" Importance="high" />
+  </Target>
+
   <!-- Register the ResolveWinMDReferences task -->
   <UsingTask TaskName="PyWinAppSDK.Build.Tasks.ResolveWinMDReferences"
-             AssemblyFile="$(_PyWinAppSDKBuildTasksPath)" />
+             AssemblyFile="$(_PyWinAppSDKBuildTasksPath)"
+             Condition="'$(_PyWinAppSDKBuildTasksPath)' != ''" />
 
   <!-- Optional: Add a target that can be called to resolve WinMDs automatically -->
   <Target Name="ResolveWinMDReferencesTarget" 
