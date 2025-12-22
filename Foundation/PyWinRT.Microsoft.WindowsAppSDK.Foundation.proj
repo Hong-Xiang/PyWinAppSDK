@@ -47,11 +47,11 @@
     <PythonDependency Include="winrt-Windows.Storage" />
   </ItemGroup>
 
-  <!-- 
+  <!--  
     Copy Windows App SDK Bootstrap DLL to package for all architectures.
     This allows Python code to initialize the runtime without manual DLL discovery.
   -->
-  <Target Name="CopyBootstrapDLLs" AfterTargets="RestructureNamespace">
+  <Target Name="CopyBootstrapDLLs" AfterTargets="GeneratePythonProjectFiles">
     <PropertyGroup>
       <BootstrapSourcePath>$(PkgMicrosoft_WindowsAppSDK_Foundation)\runtimes</BootstrapSourcePath>
       <BootstrapDestPath>$(PythonPackagePath)\winappsdk</BootstrapDestPath>

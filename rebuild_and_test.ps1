@@ -69,7 +69,7 @@ Write-Host "`n=== Running Integration Test ===" -ForegroundColor Cyan
 Push-Location "$root\test"
 
 Write-Host "Syncing dependencies..." -ForegroundColor Yellow
-uv sync
+uv sync --force-reinstall
 if ($LASTEXITCODE -ne 0) { Write-Error "Failed to sync dependencies"; exit 1 }
 
 Write-Host "Running test_integration.py..." -ForegroundColor Yellow
