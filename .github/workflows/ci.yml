@@ -31,6 +31,32 @@ jobs:
         enable-cache: true
         cache-dependency-glob: "**/pyproject.toml"
 
+    - name: Install Windows App SDK Runtime 1.8
+      shell: pwsh
+      run: |
+        Write-Host "Installing Windows App SDK Runtime 1.8..."
+        $packageName = "Microsoft.WindowsAppRuntime.1.8"
+        
+        # Download and install the Windows App SDK Runtime
+        $installerUrl = "https://aka.ms/windowsappsdk/1.8/latest/windowsappruntimeinstall-x64.exe"
+        $installerPath = "$env:TEMP\windowsappruntimeinstall.exe"
+        
+        Write-Host "Downloading from $installerUrl..."
+        Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
+        
+        Write-Host "Installing Windows App SDK Runtime..."
+        Start-Process -FilePath $installerPath -ArgumentList "--quiet" -Wait -NoNewWindow
+        
+        Write-Host "Verifying installation..."
+        $installed = Get-AppxPackage -Name "*WindowsAppRuntime*" | Where-Object { $_.Version -like "1.8.*" }
+        if ($installed) {
+          Write-Host "✓ Windows App SDK Runtime 1.8 installed successfully"
+          Write-Host "  Version: $($installed.Version)"
+          Write-Host "  Architecture: $($installed.Architecture)"
+        } else {
+          Write-Warning "Installation completed but package verification failed"
+        }
+
     - name: Restore and Build Build Tasks
       run: |
         dotnet restore PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj
