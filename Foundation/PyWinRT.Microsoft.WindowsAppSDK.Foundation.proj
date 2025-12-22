@@ -47,4 +47,41 @@
     <PythonDependency Include="winrt-Windows.Storage" />
   </ItemGroup>
 
+  <!-- 
+    Copy Windows App SDK Bootstrap DLL to package for all architectures.
+    This allows Python code to initialize the runtime without manual DLL discovery.
+  -->
+  <Target Name="CopyBootstrapDLLs" AfterTargets="RestructureNamespace">
+    <PropertyGroup>
+      <BootstrapSourcePath>$(PkgMicrosoft_WindowsAppSDK_Foundation)\runtimes</BootstrapSourcePath>
+      <BootstrapDestPath>$(PythonPackagePath)\winappsdk</BootstrapDestPath>
+    </PropertyGroup>
+
+    <Message Text="Copying Windows App SDK Bootstrap DLLs..." Importance="high" />
+    
+    <!-- Copy DLL for each architecture -->
+    <ItemGroup>
+      <BootstrapDLL Include="$(BootstrapSourcePath)\win-x64\native\Microsoft.WindowsAppRuntime.Bootstrap.dll">
+        <TargetArch>win-x64</TargetArch>
+      </BootstrapDLL>
+      <BootstrapDLL Include="$(BootstrapSourcePath)\win-x86\native\Microsoft.WindowsAppRuntime.Bootstrap.dll">
+        <TargetArch>win-x86</TargetArch>
+      </BootstrapDLL>
+      <BootstrapDLL Include="$(BootstrapSourcePath)\win-arm64\native\Microsoft.WindowsAppRuntime.Bootstrap.dll">
+        <TargetArch>win-arm64</TargetArch>
+      </BootstrapDLL>
+    </ItemGroup>
+
+    <!-- Create architecture-specific folders and copy DLLs -->
+    <MakeDir Directories="$(BootstrapDestPath)\%(BootstrapDLL.TargetArch)" />
+    <Copy SourceFiles="%(BootstrapDLL.Identity)" 
+          DestinationFolder="$(BootstrapDestPath)\%(BootstrapDLL.TargetArch)" 
+          SkipUnchangedFiles="true" 
+          Condition="Exists('%(BootstrapDLL.Identity)')" />
+    
+    <Message Text="  Copied %(BootstrapDLL.TargetArch)\Microsoft.WindowsAppRuntime.Bootstrap.dll" 
+             Importance="high" 
+             Condition="Exists('%(BootstrapDLL.Identity)')" />
+  </Target>
+
 </Project>

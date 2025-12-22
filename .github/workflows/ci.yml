@@ -31,8 +31,15 @@ jobs:
         enable-cache: true
         cache-dependency-glob: "**/pyproject.toml"
 
-    - name: Build Build Tasks
-      run: dotnet build PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj -c Release
+    - name: Restore and Build Build Tasks
+      run: |
+        dotnet restore PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj
+        dotnet build PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj -c Release --no-restore
+
+    - name: Restore Headers and Component Packages
+      run: |
+        dotnet restore Headers/Headers.proj
+        dotnet restore FullBuild/FullBuild.proj
 
     - name: Run Rebuild and Test Script
       shell: pwsh

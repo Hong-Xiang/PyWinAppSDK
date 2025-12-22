@@ -37,6 +37,7 @@ where = ["."]
 
 [tool.setuptools.package-data]
 "*" = ["*.pyi", "py.typed"]
+"winappsdk" = ["win-x64/*.dll", "win-x86/*.dll", "win-arm64/*.dll"]
 
 [tool.setuptools.dynamic]
 version = {file = "version.txt"}
