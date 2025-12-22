@@ -20,16 +20,26 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
-    - name: Setup Python 3.11
+    - name: Setup Python 3.12
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11' 
+        python-version: '3.12' 
 
     - name: Install uv
       uses: astral-sh/setup-uv@v5
       with:
         enable-cache: true
         cache-dependency-glob: "**/pyproject.toml"
+
+    - name: Restore and Build Build Tasks
+      run: |
+        dotnet restore PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj
+        dotnet build PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj -c Release --no-restore
+
+    - name: Restore Headers and Component Packages
+      run: |
+        dotnet restore Headers/Headers.proj
+        dotnet restore FullBuild/FullBuild.proj
 
     - name: Install Windows App SDK Runtime 1.8
       shell: pwsh
@@ -57,26 +67,13 @@ jobs:
           Write-Warning "Installation completed but package verification failed"
         }
 
-    - name: Restore and Build Build Tasks
-      run: |
-        dotnet restore PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj
-        dotnet build PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj -c Release --no-restore
-
-    - name: Restore Headers and Component Packages
-      run: |
-        dotnet restore Headers/Headers.proj
-        dotnet restore FullBuild/FullBuild.proj
-
-    - name: Run Rebuild and Test Script
+    - name: Build All Packages
       shell: pwsh
-      run: .\rebuild_and_test.ps1
+      run: .\rebuildAll.ps1
 
-    - name: Test Minimal Integration
+    - name: Run Integration Tests
       shell: pwsh
-      working-directory: test
-      run: |
-        uv sync
-        uv run python test_minimal.py
+      run: .\testAll.ps1
 
     - name: Upload Wheels
       uses: actions/upload-artifact@v4
