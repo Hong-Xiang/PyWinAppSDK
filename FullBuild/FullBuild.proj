@@ -3,7 +3,24 @@
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
   </PropertyGroup>
 
-  <Target Name="Build">
+  <Target Name="Restore">
+    <Message Text="Restoring Component Packages..." Importance="high" />
+
+    <!-- Restore Components -->
+    <ItemGroup>
+      <ComponentProjects Include="..\AI\PyWinRT.Microsoft.WindowsAppSDK.AI.proj" />
+      <ComponentProjects Include="..\Foundation\PyWinRT.Microsoft.WindowsAppSDK.Foundation.proj" />
+      <ComponentProjects Include="..\InteractiveExperiences\InteractiveExperiences.proj" />
+    </ItemGroup>
+    <MSBuild Projects="@(ComponentProjects)" 
+             Targets="Restore" 
+             Properties="Configuration=$(Configuration)" 
+             BuildInParallel="true" />
+             
+    <Message Text="Component Package Restore Completed Successfully." Importance="high" />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="Restore">
     <Message Text="Building Component Packages..." Importance="high" />
 
     <!-- Build Components in Parallel -->
