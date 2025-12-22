@@ -13,17 +13,6 @@ Remove-Item "$root\test\.test_venv" -Recurse -Force -ErrorAction SilentlyContinu
 # Let FullBuild handle project cleaning
 Write-Host "✓ Cleanup completed`n" -ForegroundColor Green
 
-# Determine Python path to use (prefer Python 3.11)
-$pythonPath = (Get-Command python -ErrorAction SilentlyContinue).Path
-if ($pythonPath) {
-    $pythonVersion = & $pythonPath --version 2>&1
-    Write-Host "Using Python: $pythonVersion at $pythonPath" -ForegroundColor Cyan
-    $pythonArg = "/p:PythonPath=`"$pythonPath`""
-} else {
-    Write-Host "Warning: Python not found in PATH, using uv default" -ForegroundColor Yellow
-    $pythonArg = ""
-}
-
 # --- Step 2: Restore and Build PyWinAppSDK.Build.Tasks ---
 Write-Host "=== Step 2: Building PyWinAppSDK.Build.Tasks ===" -ForegroundColor Yellow
 Push-Location "$root\PyWinAppSDK.Build.Tasks"
@@ -74,6 +63,7 @@ if ($LASTEXITCODE -ne 0) { Write-Error "Failed to sync dependencies"; exit 1 }
 
 Write-Host "Running test_integration.py..." -ForegroundColor Yellow
 uv run test_integration.py
+uv run test_minimal.py
 $testResult = $LASTEXITCODE
 
 Pop-Location

@@ -7,8 +7,10 @@
 
   <PropertyGroup>
     <PackageName>winappsdk-Foundation</PackageName>
-    <GeneratePyWinAppSDK>true</GeneratePyWinAppSDK>
   </PropertyGroup>
+
+  <!-- Trigger Python package generation after Build -->
+  <Target Name="BuildPythonPackage" AfterTargets="Build" DependsOnTargets="GeneratePythonProject" />
 
   <ItemGroup>
     <!-- NuGet Package References -->
@@ -21,23 +23,32 @@
     <PackageDownload Include="PyWinRT" Version="[$(PyWinRTVersion)]" />
     <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
     <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
+    
+    <!-- Build tasks for WinMD resolution -->
+    <PackageReference Include="PyWinAppSDK.Build.Tasks" PrivateAssets="all" />
   </ItemGroup>
 
-  <!-- 
-    WinMD inputs and references for code generation.
-    InputWinMD: Metadata to generate code from
-    ReferenceWinMD: Dependencies for resolution (no code generation)
-  -->
-  <ItemGroup>
-    <InputWinMD Include="$(PkgMicrosoft_WindowsAppSDK_Foundation)\metadata">
-      <PyPackageName>$(PackageName)</PyPackageName>
-    </InputWinMD>
+  <!-- Resolve WinMD files dynamically using ResolveWinMDReferences -->
+  <Target Name="ResolveComponentWinMDs" BeforeTargets="BuildWinMDArguments">
+    <ResolveWinMDReferences
+      AssetsFilePath="$(ProjectAssetsFile)"
+      InputPackages="Microsoft.WindowsAppSDK.Foundation"
+      ExcludePackages="Microsoft.Windows.SDK.CPP"
+      WinMDFolders="@(WinMDFolder)">
+      <Output TaskParameter="InputWinMD" ItemName="ResolvedInputWinMD" />
+      <Output TaskParameter="ReferencedWinMD" ItemName="ResolvedReferencedWinMD" />
+    </ResolveWinMDReferences>
 
-    <ReferenceWinMD Include="$(PkgMicrosoft_WindowsAppSDK_InteractiveExperiences)\metadata\10.0.18362.0">
-      <PyPackageName>winappsdk-InteractiveExperiences</PyPackageName>
-      <HeaderPath>$(MSBuildProjectDirectory)\..\InteractiveExperiences\obj\pkg\include</HeaderPath>
-    </ReferenceWinMD>
-  </ItemGroup>
+    <!-- Set up InputWinMD and ReferenceWinMD from resolved items -->
+    <ItemGroup>
+      <InputWinMD Include="@(ResolvedInputWinMD)">
+        <PyPackageName>$(PackageName)</PyPackageName>
+      </InputWinMD>
+      <ReferenceWinMD Include="@(ResolvedReferencedWinMD)">
+        <PyPackageName>winappsdk</PyPackageName>
+      </ReferenceWinMD>
+    </ItemGroup>
+  </Target>
 
   <!-- Python runtime dependencies (required for type marshalling at runtime) -->
   <ItemGroup>

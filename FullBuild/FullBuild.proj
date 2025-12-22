@@ -31,7 +31,7 @@
     </ItemGroup>
     <MSBuild Projects="@(ComponentProjects)" 
              Targets="Build" 
-             Properties="Configuration=$(Configuration);GeneratePyWinAppSDK=true" 
+             Properties="Configuration=$(Configuration)" 
              BuildInParallel="true" />
              
     <Message Text="Component Package Build Completed Successfully." Importance="high" />

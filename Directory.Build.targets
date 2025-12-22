@@ -67,12 +67,6 @@
   <Target Name="GeneratePyWinRT" DependsOnTargets="BuildWinMDArguments">
     <MakeDir Directories="$(PyWinRTOutputPath)" />
 
-    <!-- Use ItemGroup-based arguments if available, otherwise fall back to simple pattern -->
-    <PropertyGroup Condition="'$(PyWinRTInputArgs)' == '' and '$(MetadataPath)' != ''">
-      <PyWinRTInputArgs>--input $(PackageName);$(MetadataPath)</PyWinRTInputArgs>
-      <PyWinRTRefArgs>--reference winrt;$(WinSDKMetadataPath)</PyWinRTRefArgs>
-    </PropertyGroup>
-
     <Message Text="PyWinRT command: $(PyWinRTExe) $(PyWinRTInputArgs) $(PyWinRTRefArgs) --output $(PyWinRTOutputPath) --header-path $(PyWinRTHeaderPath)" Importance="high" />
 
     <Exec
@@ -248,17 +242,17 @@
   </Target>
 
   <!-- Build the Python wheel -->
-  <Target Name="GeneratePythonProject" BeforeTargets="Build" DependsOnTargets="GeneratePythonProjectFiles" Condition="'$(GeneratePyWinAppSDK)' == 'true'">
-    <Message Text="==================== Building Package ===================" />
+  <Target Name="GeneratePythonProject" DependsOnTargets="GeneratePythonProjectFiles">
+    <Message Text="==================== Building Package ===================" Importance="high" />
 
     <MakeDir Directories="$(LocalWheelDirectory)" Condition="!Exists('$(LocalWheelDirectory)')" />
 
-    
-    <!-- Build directly from package path. Use PythonPath property if specified for cross-architecture builds -->
+    <!-- Build directly from package path. Use PythonPath property if specified, otherwise use PythonVersion -->
     <!-- find-links is configured in pyproject.toml [tool.uv] with correct relative path (../../../wheels from obj/pkg) -->
     <PropertyGroup>
       <UvBuildCommand Condition="'$(PythonPath)' != ''">uv build --wheel --python &quot;$(PythonPath)&quot; --out-dir $(LocalWheelDirectory)</UvBuildCommand>
-      <UvBuildCommand Condition="'$(PythonPath)' == ''">uv build --wheel --out-dir $(LocalWheelDirectory)</UvBuildCommand>
+      <UvBuildCommand Condition="'$(PythonPath)' == '' and '$(PythonVersion)' != ''">uv build --wheel --python $(PythonVersion) --out-dir $(LocalWheelDirectory)</UvBuildCommand>
+      <UvBuildCommand Condition="'$(PythonPath)' == '' and '$(PythonVersion)' == ''">uv build --wheel --out-dir $(LocalWheelDirectory)</UvBuildCommand>
     </PropertyGroup>
     <Exec Command="$(UvBuildCommand)" WorkingDirectory="$(PythonPackagePath)" />
   </Target>

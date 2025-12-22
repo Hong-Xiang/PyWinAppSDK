@@ -27,9 +27,4 @@
         <WinMDFolder Include="metadata" />
         <WinMDFolder Include="metadata\10.0.18362.0" />
     </ItemGroup>
-
-    <ItemGroup>
-        <PythonPackageFile Include="$(MSBuildProjectDirectory)\pyproject.toml" Condition="Exists('$(MSBuildProjectDirectory)\pyproject.toml')" />
-        <PythonPackageFile Include="$(MSBuildProjectDirectory)\README.md" Condition="Exists('$(MSBuildProjectDirectory)\README.md')" />
-    </ItemGroup>
 </Project>

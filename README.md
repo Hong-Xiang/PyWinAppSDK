@@ -89,9 +89,9 @@ dotnet build -c Release
 # 2. Build order matters: Headers → InteractiveExperiences → Foundation → AI
 cd ..
 dotnet build Headers
-dotnet build InteractiveExperiences /p:GeneratePyWinAppSDK=true
-dotnet build Foundation /p:GeneratePyWinAppSDK=true
-dotnet build AI /p:GeneratePyWinAppSDK=true
+dotnet build InteractiveExperiences
+dotnet build Foundation
+dotnet build AI
 ```
 
 ### Run Tests Only
