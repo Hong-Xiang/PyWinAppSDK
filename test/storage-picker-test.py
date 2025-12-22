@@ -56,63 +56,26 @@ async def pick_single_file():
 
 
 if __name__ == "__main__":
-    import sys
-    
-    # Enable better error output
-    sys.stderr.flush()
-    sys.stdout.flush()
-    
-    print("Testing Windows App SDK Storage Pickers...")
-    print()
-    
-    # Verify imports work
-    print("✅ Imports successful!")
-    print(f"  - WindowId: {WindowId}")
-    print(f"  - FileOpenPicker: {FileOpenPicker}")
-    print()
-    
-    # Try WITHOUT bootstrap first - it might just work since runtime is installed
-    print("Attempting to use Windows App SDK without bootstrap initialization...")
-    print("(This works if the runtime is already available in the system)")
-    print()
-    
     try:
-        print("Opening file picker...")
-        file = asyncio.run(pick_single_file())
-        
-        if file:
-            print(f"\n✅ Success! Selected: {file.path}")
-        else:
-            print("\n✅ Picker opened successfully (no file selected)")
+        with initialize_windows_app_sdk(
+            options=BootstrapInitializeOptions.ON_ERROR_SHOW_UI,
+            verbose=True
+        ):
+            print("\nOpening file picker...")
+            file = asyncio.run(pick_single_file())
+            
+            if file:
+                print(f"\n✅ Success! Selected: {file.path}")
+                
+    except FileNotFoundError as e:
+        print(f"❌ {e}")
+            
+    except OSError as e:
+        print(f"❌ Bootstrap failed: {e}")
             
     except Exception as e:
-        print(f"\n❌ Failed without bootstrap: {e}")
-        print("\nNow trying WITH bootstrap initialization...")
-        print()
-        
-        # If that fails, try with bootstrap
-        try:
-            with initialize_windows_app_sdk(
-                options=BootstrapInitializeOptions.ON_ERROR_SHOW_UI,
-                verbose=True
-            ):
-                print("\nOpening file picker...")
-                file = asyncio.run(pick_single_file())
-                
-                if file:
-                    print(f"\n✅ Success! Selected: {file.path}")
-                    
-        except FileNotFoundError as e:
-            print(f"❌ {e}")
-                
-        except OSError as e:
-            print(f"❌ Bootstrap failed: {e}")
-                
-        except Exception as e:
-            print(f"❌ Unexpected error: {e}")
-            import traceback
-            traceback.print_exc()
+        print(f"❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
     
-    finally:
-        sys.stderr.flush()
-        sys.stdout.flush()
+

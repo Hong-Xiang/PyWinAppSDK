@@ -111,6 +111,8 @@ setup(
     # Component-specific packages (regular packages)
     packages=(
         find_packages(where=".", include=["{safe_prefix}", "{safe_prefix}.*"]) +
+        # Regular packages under winappsdk namespace (e.g., winappsdk.bootstrap)
+        find_packages(where=".", include=["winappsdk.*"]) +
         # Namespace packages (PEP 420) - allows multiple wheels to contribute to winappsdk.*
         find_namespace_packages(where=".", include=["winappsdk", "winappsdk.*"])
     ),
