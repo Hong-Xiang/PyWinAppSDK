@@ -16,19 +16,6 @@
     This allows normal .NET projects to coexist in the same directory without triggering Python package generation.
   -->
 
-
-
-  <!-- Common package files -->
-  <ItemGroup>
-    <!-- <PythonPackageFile Include="$(MSBuildProjectDirectory)\MANIFEST.in" Condition="Exists('$(MSBuildProjectDirectory)\MANIFEST.in')" /> -->
-    <PythonPackageFile Include="$(MSBuildProjectDirectory)\README.md" Condition="Exists('$(MSBuildProjectDirectory)\README.md')" />
-  </ItemGroup>
-
-  <!-- 
-    Build CLI arguments from InputWinMD and ReferenceWinMD ItemGroups.
-    Projects using the simple single-input pattern can skip defining these
-    and just set MetadataPath property instead.
-  -->
   <Target Name="BuildWinMDArguments">
     <!-- Set tool paths that depend on NuGet package properties (must be inside target for proper evaluation) -->
     <PropertyGroup>
@@ -154,30 +141,23 @@
     <Message Text="Removed duplicate microsoft folder from $(SafePackageName)" Importance="high" Condition="Exists('$(ComponentMicrosoftPath)')" />
 
     <!-- Copy *.cpp files (extension sources) to package root with stripped version folder -->
-    <!-- Exclude problematic namespaces that have code generation issues -->
+    <!-- All cpp files are copied; setup.py will only build extensions for namespaces in the filtered list -->
     <ItemGroup>
-      <AllCppFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.cpp">
+      <CppFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.cpp">
         <StrippedPath Condition="'%(RecursiveDir)' != '' and $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &gt;= 0">$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')), 1))))</StrippedPath>
         <StrippedPath Condition="'%(RecursiveDir)' == '' or $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &lt; 0"></StrippedPath>
-      </AllCppFiles>
-      <!-- Filter out excluded files -->
-      <CppFiles Include="@(AllCppFiles)" Condition="'%(Filename)' != 'py.Microsoft.Windows.ApplicationModel.Background.UniversalBGTask'" />
+      </CppFiles>
     </ItemGroup>
     <Copy SourceFiles="@(CppFiles)"
       DestinationFiles="@(CppFiles->'$(PythonPackagePath)\\%(StrippedPath)%(Filename)%(Extension)')"
       SkipUnchangedFiles="true" />
-    
-    <!-- Remove excluded namespace cpp files that may have been copied -->
-    <Delete Files="$(PythonPackagePath)\py.Microsoft.Windows.ApplicationModel.Background.UniversalBGTask.cpp" />
-    <Delete Files="$(PythonPackagePath)\*\py.Microsoft.Windows.ApplicationModel.Background.UniversalBGTask.cpp" />
 
-    <!-- Copy *.pyi and *.pyd files to winappsdk_<component> (also exclude problematic namespaces) -->
+    <!-- Copy *.pyi and *.pyd files to winappsdk_<component> -->
     <ItemGroup>
-      <AllPyiFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.pyi">
+      <PyiFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.pyi">
         <StrippedPath Condition="'%(RecursiveDir)' != '' and $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &gt;= 0">$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')), 1))))</StrippedPath>
         <StrippedPath Condition="'%(RecursiveDir)' == '' or $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &lt; 0"></StrippedPath>
-      </AllPyiFiles>
-      <PyiFiles Include="@(AllPyiFiles)" Condition="!$([System.String]::Copy('%(Filename)').Contains('microsoft_windows_applicationmodel_background_universalbgtask'))" />
+      </PyiFiles>
       <PydFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.pyd">
         <StrippedPath Condition="'%(RecursiveDir)' != '' and $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &gt;= 0">$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')), 1))))</StrippedPath>
         <StrippedPath Condition="'%(RecursiveDir)' == '' or $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &lt; 0"></StrippedPath>
@@ -190,12 +170,12 @@
       DestinationFiles="@(PydFiles->'$(PythonPackagePath)\\$(SafePackageName)\\%(Filename)%(Extension)')"
       SkipUnchangedFiles="true" />
 
-    <Message Text="Merged files to $(PythonPackagePath) (no staging)" />
-
-    <!-- Identify references that have headers to copy -->
-    <ItemGroup>
-      <ReferenceWithHeaders Include="@(ReferenceWinMD)" Condition="'%(ReferenceWinMD.HeaderPath)' != ''" />
-    </ItemGroup>
+    <!-- Create __init__.py for component package (winappsdk_Foundation, etc.) -->
+    <WriteLinesToFile 
+      File="$(PythonPackagePath)\$(SafePackageName)\__init__.py" 
+      Lines="# Auto-generated package - internal extension modules" 
+      Overwrite="false" 
+      Encoding="UTF-8" />
 
     <Message Text="Will copy headers from %(ReferenceWithHeaders.PyPackageName)..."
       Importance="high" Condition="'@(ReferenceWithHeaders)' != ''" />
@@ -247,9 +227,6 @@
     <Message Text="==================== Preparing Package Files ====================" Importance="high" />
 
     <Message Text="Preparing package with @(Namespace->Count()) namespace(s)" Importance="high" />
-
-    <!-- Copy static pyproject.toml from project directory -->
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\pyproject.toml" DestinationFolder="$(PythonPackagePath)" SkipUnchangedFiles="false" />
     
     <!-- Generate setup.py using generate-package.py (skip pyproject.toml since we use static one) -->
     <PropertyGroup>

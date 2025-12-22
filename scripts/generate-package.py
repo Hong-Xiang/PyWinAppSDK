@@ -35,12 +35,18 @@ cpp_files = glob.glob("py.*.cpp") + glob.glob("*/py.*.cpp")
 # Generate extensions from found cpp files
 # Extension modules use winappsdk_* naming internally (for PyWinRT compatibility)
 # but are imported by winappsdk.* public namespace
+# Only build extensions for namespaces in the NAMESPACES list
 extensions = []
 for cpp_file in cpp_files:
     # Extract namespace from filename
     basename = os.path.basename(cpp_file)
     if basename.startswith("py.") and basename.endswith(".cpp"):
         namespace = basename[3:-4]  # Remove "py." and ".cpp"
+        
+        # Only build this extension if its namespace is in the NAMESPACES list
+        if namespace not in NAMESPACES:
+            continue
+            
         ext_name = f"{{PACKAGE_NAME}}._{{PACKAGE_NAME}}_{{namespace.lower().replace('.', '_')}}"
         
         extensions.append(Extension(
@@ -101,16 +107,6 @@ def generate_merged_package(
     
     with open(output_dir / "setup.py", "w", encoding="utf-8", newline="\n") as f:
         f.write(setup_py_content)
-    
-    # Create __init__.py for winappsdk_* package (extension container)
-    package_dir = output_dir / package_name
-    package_dir.mkdir(exist_ok=True)
-    init_file = package_dir / "__init__.py"
-    if not init_file.exists():
-        init_file.write_text("# Auto-generated package - internal extension modules\n", encoding="utf-8")
-    
-    # winappsdk package is the user-facing namespace
-    # (the actual microsoft/* structure is moved here in post-processing)
     
     print(f"[OK] Generated setup.py in {output_dir}")
     print(f"  Package: {package_name}")
