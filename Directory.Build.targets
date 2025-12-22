@@ -253,14 +253,14 @@
     
     <!-- Generate setup.py using generate-package.py (skip pyproject.toml since we use static one) -->
     <PropertyGroup>
+      <SafePackageName>$(PackageName.Replace('-', '_'))</SafePackageName>
       <NamespaceArgs>@(Namespace->'--namespace "%(NamespaceValue)"', ' ')</NamespaceArgs>
-      <DependencyArgs>@(PythonDependency->'--dependency "%(Identity)"', ' ')</DependencyArgs>
       <GeneratePackageScript>$(ScriptsDirectory)generate-package.py</GeneratePackageScript>
     </PropertyGroup>
     
-    <Message Text="Generating setup.py with $(PackageName) and @(Namespace->Count()) namespace(s)..." Importance="high" />
+    <Message Text="Generating setup.py with $(SafePackageName) and @(Namespace->Count()) namespace(s)..." Importance="high" />
     <Message Text="Namespaces: @(Namespace->'%(NamespaceValue)', ', ')" Importance="high" />
-    <Exec Command="python &quot;$(GeneratePackageScript)&quot; &quot;$(PythonPackagePath)&quot; --package-prefix $(PackageName) $(NamespaceArgs) $(DependencyArgs) --version $(PyWinRTVersion) --skip-pyproject" 
+    <Exec Command="python &quot;$(GeneratePackageScript)&quot; &quot;$(PythonPackagePath)&quot; --package-name $(SafePackageName) $(NamespaceArgs)" 
           WorkingDirectory="$(MSBuildThisFileDirectory)" />
     
     <!-- Write version to version.txt for setuptools dynamic version -->

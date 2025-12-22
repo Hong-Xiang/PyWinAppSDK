@@ -36,6 +36,13 @@ Changelog = "https://github.com/pywinrt/pywinrt/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
+# Include both component-specific packages and winappsdk namespace packages
+include = [
+    "winappsdk_AI",
+    "winappsdk_AI.*",
+    "winappsdk",
+    "winappsdk.*",
+]
 
 [tool.setuptools.package-data]
 "*" = ["*.pyi", "py.typed"]

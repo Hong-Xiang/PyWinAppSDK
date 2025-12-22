@@ -45,6 +45,12 @@ jobs:
       shell: pwsh
       run: .\rebuild_and_test.ps1
 
+    - name: Test Minimal Integration
+      shell: pwsh
+      working-directory: test
+      run: |
+        uv run --with ../wheels/winappsdk_Foundation-*.whl --with ../wheels/winappsdk_InteractiveExperiences-*.whl --no-project python test_minimal.py
+
     - name: Upload Wheels
       uses: actions/upload-artifact@v4
       if: always()
