@@ -276,32 +276,14 @@
 
     <MakeDir Directories="$(LocalWheelDirectory)" Condition="!Exists('$(LocalWheelDirectory)')" />
 
-    <!-- Commented out: Short temp directory was used to avoid Windows path length issues during C++ compilation -->
-    <!-- This caused conflicts with parallel builds. Restructured build folder should handle long paths better. -->
-    <!--
-    <PropertyGroup>
-      <ShortBuildPath>$(TEMP)\pb</ShortBuildPath>
-    </PropertyGroup>
-    
-    <RemoveDir Directories="$(ShortBuildPath)" />
-    <MakeDir Directories="$(ShortBuildPath)" />
-    <Exec Command="robocopy &quot;$(PythonPackagePath)&quot; &quot;$(ShortBuildPath)&quot; /E /NFL /NDL /NJH /NJS /NC /NS /NP" IgnoreExitCode="true" />
-    -->
     
     <!-- Build directly from package path. Use PythonPath property if specified for cross-architecture builds -->
-    <!-- Use find-links to find local winapp-sdk and winrt-sdk wheels -->
+    <!-- find-links is configured in pyproject.toml [tool.uv] with correct relative path (../../../wheels from obj/pkg) -->
     <PropertyGroup>
-      <UvFindLinks>--find-links $(LocalWheelDirectory)</UvFindLinks>
-      <UvBuildCommand Condition="'$(PythonPath)' != ''">uv build --wheel --python &quot;$(PythonPath)&quot; $(UvFindLinks) --out-dir $(LocalWheelDirectory)</UvBuildCommand>
-      <UvBuildCommand Condition="'$(PythonPath)' == ''">uv build --wheel $(UvFindLinks) --out-dir $(LocalWheelDirectory)</UvBuildCommand>
+      <UvBuildCommand Condition="'$(PythonPath)' != ''">uv build --wheel --python &quot;$(PythonPath)&quot; --out-dir $(LocalWheelDirectory)</UvBuildCommand>
+      <UvBuildCommand Condition="'$(PythonPath)' == ''">uv build --wheel --out-dir $(LocalWheelDirectory)</UvBuildCommand>
     </PropertyGroup>
     <Exec Command="$(UvBuildCommand)" WorkingDirectory="$(PythonPackagePath)" />
-
-    <ItemGroup>
-      <WheelFiles Include="$(LocalWheelDirectory)\*.whl" />
-    </ItemGroup>
-
-    <Message Text="[OK] Current wheel: %(WheelFiles.Filename)%(WheelFiles.Extension)" Importance="high" Condition="'@(WheelFiles)' != ''" />
   </Target>
 
   <!-- Clean generated files -->
