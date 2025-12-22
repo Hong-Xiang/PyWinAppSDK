@@ -51,7 +51,7 @@ include = [
 version = {file = "version.txt"}
 
 [tool.uv]
-find-links = ["../../../wheels"]
+find-links = ["../../wheels"]
 
 [tool.cibuildwheel]
 before-build = "uv pip install setuptools"
