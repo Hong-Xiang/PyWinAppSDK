@@ -22,7 +22,7 @@ import asyncio
 import ctypes
 
 # Import Windows App SDK bootstrap (bundled with Foundation package)
-from winappsdk import initialize_windows_app_sdk, BootstrapInitializeOptions
+from winappsdk.bootstrap import initialize_windows_app_sdk, BootstrapInitializeOptions
 
 # Import Windows App SDK types
 from winappsdk.microsoft.ui import WindowId

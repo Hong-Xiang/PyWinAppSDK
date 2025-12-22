@@ -8,8 +8,10 @@ Write-Host "╚═════════════════════�
 # --- Step 1: Clean previous builds ---
 Write-Host "=== Step 1: Cleaning previous builds ===" -ForegroundColor Yellow
 Remove-Item "$root\wheels\*.whl" -Force -ErrorAction SilentlyContinue
+Remove-Item "$root\test\.venv" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "$root\test\.test_venv" -Recurse -Force -ErrorAction SilentlyContinue
 # Let FullBuild handle project cleaning
-Write-Host "✓ Wheel cleanup completed`n" -ForegroundColor Green
+Write-Host "✓ Cleanup completed`n" -ForegroundColor Green
 
 # Determine Python path to use (prefer Python 3.11)
 $pythonPath = (Get-Command python -ErrorAction SilentlyContinue).Path

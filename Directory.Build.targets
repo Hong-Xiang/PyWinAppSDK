@@ -102,19 +102,20 @@
       <NamespaceCppFile Include="$(PyWinRTOutputPath)\$(PackageName)-*\py.*.cpp" />
     </ItemGroup>
 
-    <!-- Namespaces to exclude (e.g., internal implementation details) -->
+    <!-- Namespaces to exclude (e.g., internal implementation details or broken code generation) -->
     <PropertyGroup>
-      <ExcludedNamespaces Condition="'$(ExcludedNamespaces)' == ''">py.Microsoft.Windows.ApplicationModel.Background.UniversalBGTask</ExcludedNamespaces>
+      <ExcludedNamespaces>;py.Microsoft.Windows.ApplicationModel.Background.UniversalBGTask;</ExcludedNamespaces>
     </PropertyGroup>
 
     <ItemGroup Condition="'@(NamespaceCppFile)' != ''">
       <!-- Extract namespace from filename: py.Microsoft.UI.cpp -> Microsoft.UI -->
-      <Namespace Include="@(NamespaceCppFile)" Condition="!$(ExcludedNamespaces.Contains('%(Filename)'))">
+      <!-- Filter out excluded namespaces by checking if ;filename; is contained in ;ExcludedNamespaces; -->
+      <Namespace Include="@(NamespaceCppFile)" Condition="!$(ExcludedNamespaces.Contains(';%(Filename);'))">
         <NamespaceValue>$([System.String]::Copy('%(Filename)').Substring(3))</NamespaceValue>
       </Namespace>
     </ItemGroup>
 
-    <Message Text="Found @(Namespace->Count()) namespace(s):" Importance="high" />
+    <Message Text="Found @(Namespace->Count()) namespace(s) (after exclusions):" Importance="high" />
     <Message Text="  - %(Namespace.NamespaceValue)" Importance="high" Condition="'@(Namespace)' != ''" />
   </Target>
 
@@ -153,22 +154,30 @@
     <Message Text="Removed duplicate microsoft folder from $(SafePackageName)" Importance="high" Condition="Exists('$(ComponentMicrosoftPath)')" />
 
     <!-- Copy *.cpp files (extension sources) to package root with stripped version folder -->
+    <!-- Exclude problematic namespaces that have code generation issues -->
     <ItemGroup>
-      <CppFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.cpp">
+      <AllCppFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.cpp">
         <StrippedPath Condition="'%(RecursiveDir)' != '' and $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &gt;= 0">$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')), 1))))</StrippedPath>
         <StrippedPath Condition="'%(RecursiveDir)' == '' or $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &lt; 0"></StrippedPath>
-      </CppFiles>
+      </AllCppFiles>
+      <!-- Filter out excluded files -->
+      <CppFiles Include="@(AllCppFiles)" Condition="'%(Filename)' != 'py.Microsoft.Windows.ApplicationModel.Background.UniversalBGTask'" />
     </ItemGroup>
     <Copy SourceFiles="@(CppFiles)"
       DestinationFiles="@(CppFiles->'$(PythonPackagePath)\\%(StrippedPath)%(Filename)%(Extension)')"
       SkipUnchangedFiles="true" />
+    
+    <!-- Remove excluded namespace cpp files that may have been copied -->
+    <Delete Files="$(PythonPackagePath)\py.Microsoft.Windows.ApplicationModel.Background.UniversalBGTask.cpp" />
+    <Delete Files="$(PythonPackagePath)\*\py.Microsoft.Windows.ApplicationModel.Background.UniversalBGTask.cpp" />
 
-    <!-- Copy *.pyi and *.pyd files to winappsdk_<component> -->
+    <!-- Copy *.pyi and *.pyd files to winappsdk_<component> (also exclude problematic namespaces) -->
     <ItemGroup>
-      <PyiFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.pyi">
+      <AllPyiFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.pyi">
         <StrippedPath Condition="'%(RecursiveDir)' != '' and $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &gt;= 0">$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')), 1))))</StrippedPath>
         <StrippedPath Condition="'%(RecursiveDir)' == '' or $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &lt; 0"></StrippedPath>
-      </PyiFiles>
+      </AllPyiFiles>
+      <PyiFiles Include="@(AllPyiFiles)" Condition="!$([System.String]::Copy('%(Filename)').Contains('microsoft_windows_applicationmodel_background_universalbgtask'))" />
       <PydFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.pyd">
         <StrippedPath Condition="'%(RecursiveDir)' != '' and $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &gt;= 0">$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')), 1))))</StrippedPath>
         <StrippedPath Condition="'%(RecursiveDir)' == '' or $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &lt; 0"></StrippedPath>
@@ -241,6 +250,18 @@
 
     <!-- Copy static pyproject.toml from project directory -->
     <Copy SourceFiles="$(MSBuildProjectDirectory)\pyproject.toml" DestinationFolder="$(PythonPackagePath)" SkipUnchangedFiles="false" />
+    
+    <!-- Generate setup.py using generate-package.py (skip pyproject.toml since we use static one) -->
+    <PropertyGroup>
+      <NamespaceArgs>@(Namespace->'--namespace "%(NamespaceValue)"', ' ')</NamespaceArgs>
+      <DependencyArgs>@(PythonDependency->'--dependency "%(Identity)"', ' ')</DependencyArgs>
+      <GeneratePackageScript>$(ScriptsDirectory)generate-package.py</GeneratePackageScript>
+    </PropertyGroup>
+    
+    <Message Text="Generating setup.py with $(PackageName) and @(Namespace->Count()) namespace(s)..." Importance="high" />
+    <Message Text="Namespaces: @(Namespace->'%(NamespaceValue)', ', ')" Importance="high" />
+    <Exec Command="python &quot;$(GeneratePackageScript)&quot; &quot;$(PythonPackagePath)&quot; --package-prefix $(PackageName) $(NamespaceArgs) $(DependencyArgs) --version $(PyWinRTVersion) --skip-pyproject" 
+          WorkingDirectory="$(MSBuildThisFileDirectory)" />
     
     <!-- Write version to version.txt for setuptools dynamic version -->
     <WriteLinesToFile File="$(PythonPackagePath)\version.txt" Lines="$(PyWinRTVersion)" Overwrite="true" />

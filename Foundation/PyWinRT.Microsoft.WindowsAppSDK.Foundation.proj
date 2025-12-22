@@ -84,4 +84,28 @@
              Condition="Exists('%(BootstrapDLL.Identity)')" />
   </Target>
 
+  <!-- Copy Bootstrap Python module to package -->
+  <Target Name="CopyBootstrapModule" AfterTargets="CopyBootstrapDLLs">
+    <PropertyGroup>
+      <BootstrapSourceDir>$(MSBuildProjectDirectory)\winappsdk\bootstrap</BootstrapSourceDir>
+    </PropertyGroup>
+    
+    <Message Text="Copying Bootstrap Python module..." Importance="high" />
+    <Message Text="  Source: $(BootstrapSourceDir)" Importance="high" />
+    <Message Text="  Dest: $(PythonPackagePath)\winappsdk\bootstrap" Importance="high" />
+    
+    <!-- Copy the bootstrap folder with all its contents -->
+    <ItemGroup>
+      <BootstrapPyFiles Include="$(BootstrapSourceDir)\**\*.*" />
+    </ItemGroup>
+    
+    <Message Text="  Found @(BootstrapPyFiles->Count()) file(s) to copy" Importance="high" />
+    
+    <Copy SourceFiles="@(BootstrapPyFiles)" 
+          DestinationFolder="$(PythonPackagePath)\winappsdk\bootstrap\%(RecursiveDir)" 
+          SkipUnchangedFiles="true" />
+    
+    <Message Text="  ✓ Copied bootstrap module to package" Importance="high" />
+  </Target>
+
 </Project>
