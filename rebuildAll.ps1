@@ -10,7 +10,8 @@ Write-Host "=== Step 1: Cleaning previous builds ===" -ForegroundColor Yellow
 Remove-Item "$root\wheels\*.whl" -Force -ErrorAction SilentlyContinue
 Remove-Item "$root\test\.venv" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "$root\test\.test_venv" -Recurse -Force -ErrorAction SilentlyContinue
-# Let FullBuild handle project cleaning
+# Ensure wheels directory exists for parallel builds
+New-Item -Path "$root\wheels" -ItemType Directory -Force | Out-Null
 Write-Host "✓ Cleanup completed`n" -ForegroundColor Green
 
 # --- Step 2: Restore and Build PyWinAppSDK.Build.Tasks ---

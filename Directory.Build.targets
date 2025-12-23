@@ -85,15 +85,19 @@
 
     <!-- Namespaces to exclude (e.g., internal implementation details or broken code generation) -->
     <PropertyGroup>
-      <ExcludedNamespaces>;py.Microsoft.Windows.ApplicationModel.Background.UniversalBGTask;</ExcludedNamespaces>
+      <ExcludedNamespaces>;Microsoft.Windows.ApplicationModel.Background.UniversalBGTask;</ExcludedNamespaces>
     </PropertyGroup>
 
+    <!-- Extract namespace from filename: py.Microsoft.UI.cpp -> Microsoft.UI -->
     <ItemGroup Condition="'@(NamespaceCppFile)' != ''">
-      <!-- Extract namespace from filename: py.Microsoft.UI.cpp -> Microsoft.UI -->
-      <!-- Filter out excluded namespaces by checking if ;filename; is contained in ;ExcludedNamespaces; -->
-      <Namespace Include="@(NamespaceCppFile)" Condition="!$(ExcludedNamespaces.Contains(';%(Filename);'))">
+      <NamespaceTemp Include="@(NamespaceCppFile)">
         <NamespaceValue>$([System.String]::Copy('%(Filename)').Substring(3))</NamespaceValue>
-      </Namespace>
+      </NamespaceTemp>
+    </ItemGroup>
+
+    <!-- Filter out excluded namespaces by checking clean namespace name -->
+    <ItemGroup>
+      <Namespace Include="@(NamespaceTemp)" Condition="!$(ExcludedNamespaces.Contains(';%(NamespaceTemp.NamespaceValue);'))" />
     </ItemGroup>
 
     <Message Text="Found @(Namespace->Count()) namespace(s) (after exclusions):" Importance="high" />
@@ -101,7 +105,6 @@
   </Target>
 
   <!-- Merge PyWinRT output files into package directory -->
-  <!-- Note: GenerateCppWinRT is no longer needed - headers are provided by winappsdk_headers package -->
   <Target Name="MergePyWinRTResults" DependsOnTargets="GeneratePyWinRT;CollectNamespaces">
     <Message Text="==================== MergePyWinRTResults (Staging) ====================" Importance="high" />
 
@@ -109,7 +112,6 @@
     <PropertyGroup>
       <SafePackageName>$(PackageName.Replace('-', '_'))</SafePackageName>
     </PropertyGroup>
-    <!-- Clean any previous staging leftovers -->
     <RemoveDir Directories="$(PythonPackagePath)\_stage" Condition="Exists('$(PythonPackagePath)\_stage')" />
     <MakeDir Directories="$(PythonPackagePath)\winappsdk" />
     <MakeDir Directories="$(PythonPackagePath)\$(SafePackageName)" />
@@ -118,12 +120,8 @@
     <WriteLinesToFile File="$(PythonPackagePath)\winappsdk\py.typed" Lines="" Overwrite="true" />
     <WriteLinesToFile File="$(PythonPackagePath)\$(SafePackageName)\py.typed" Lines="" Overwrite="true" />
 
-    <!-- 
-      Copy *.py files to winappsdk namespace.
-      PyWinRT output structure: gen/Namespace-Package/winappsdk_Component/microsoft/.../*.py
-      
-      We extract the microsoft/* path and copy to PythonPackagePath\winappsdk\microsoft\...
-    -->
+    <!-- ========== Copy Generated Python Files ========== -->
+    <!-- Copy *.py files to winappsdk namespace using PowerShell script for complex path handling -->
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(ScriptsDirectory)copy-python-namespace.ps1&quot; -PyWinRTOutputPath &quot;$(PyWinRTOutputPath)&quot; -SafePackageName $(SafePackageName) -DestPath &quot;$(PythonPackagePath)\winappsdk&quot;" />
     <Message Text="Copied .py files to winappsdk namespace" Importance="high" />
     
@@ -132,10 +130,9 @@
       <ComponentMicrosoftPath>$(PythonPackagePath)\$(SafePackageName)\microsoft</ComponentMicrosoftPath>
     </PropertyGroup>
     <RemoveDir Directories="$(ComponentMicrosoftPath)" Condition="Exists('$(ComponentMicrosoftPath)')" />
-    <Message Text="Removed duplicate microsoft folder from $(SafePackageName)" Importance="high" Condition="Exists('$(ComponentMicrosoftPath)')" />
 
+    <!-- ========== Copy Generated C++ and Type Files ========== -->
     <!-- Copy *.cpp files (extension sources) to package root with stripped version folder -->
-    <!-- All cpp files are copied; setup.py will only build extensions for namespaces in the filtered list -->
     <ItemGroup>
       <CppFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.cpp">
         <StrippedPath Condition="'%(RecursiveDir)' != '' and $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &gt;= 0">$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')), 1))))</StrippedPath>
@@ -146,23 +143,17 @@
       DestinationFiles="@(CppFiles->'$(PythonPackagePath)\\%(StrippedPath)%(Filename)%(Extension)')"
       SkipUnchangedFiles="true" />
 
-    <!-- Copy *.pyi and *.pyd files to winappsdk_<component> -->
+    <!-- Copy *.pyi stub files and *.pyd extensions to winappsdk_<component> -->
     <ItemGroup>
       <PyiFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.pyi">
-        <StrippedPath Condition="'%(RecursiveDir)' != '' and $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &gt;= 0">$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')), 1))))</StrippedPath>
-        <StrippedPath Condition="'%(RecursiveDir)' == '' or $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &lt; 0"></StrippedPath>
+        <DestPath>$(PythonPackagePath)\$(SafePackageName)</DestPath>
       </PyiFiles>
       <PydFiles Include="$(PyWinRTOutputPath)\$(PackageName)-*\**\*.pyd">
-        <StrippedPath Condition="'%(RecursiveDir)' != '' and $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &gt;= 0">$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')), 1))))</StrippedPath>
-        <StrippedPath Condition="'%(RecursiveDir)' == '' or $([System.String]::Copy('%(RecursiveDir)').IndexOf('\\')) &lt; 0"></StrippedPath>
+        <DestPath>$(PythonPackagePath)\$(SafePackageName)</DestPath>
       </PydFiles>
     </ItemGroup>
-    <Copy SourceFiles="@(PyiFiles)"
-      DestinationFiles="@(PyiFiles->'$(PythonPackagePath)\\$(SafePackageName)\\%(Filename)%(Extension)')"
-      SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(PydFiles)"
-      DestinationFiles="@(PydFiles->'$(PythonPackagePath)\\$(SafePackageName)\\%(Filename)%(Extension)')"
-      SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(PyiFiles)" DestinationFolder="%(PyiFiles.DestPath)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(PydFiles)" DestinationFolder="%(PydFiles.DestPath)" SkipUnchangedFiles="true" />
 
     <!-- Create __init__.py for component package (winappsdk_Foundation, etc.) -->
     <WriteLinesToFile 
@@ -237,8 +228,10 @@
     <!-- Write version to version.txt for setuptools dynamic version -->
     <WriteLinesToFile File="$(PythonPackagePath)\version.txt" Lines="$(PyWinRTVersion)" Overwrite="true" />
 
-    <!-- Copy package files (README.md) from project directory -->
-    <Copy SourceFiles="@(PythonPackageFile)" DestinationFolder="$(PythonPackagePath)" SkipUnchangedFiles="true" />
+    <!-- Copy static package files (pyproject.toml, README.md defined in Directory.Build.props) -->
+    <Message Text="Copying static package files..." Importance="high" Condition="'@(PythonPackageFile)' != ''" />
+    <Copy SourceFiles="@(PythonPackageFile)" DestinationFolder="$(PythonPackagePath)" SkipUnchangedFiles="true" Condition="'@(PythonPackageFile)' != ''" />
+    <Message Text="  Copied @(PythonPackageFile->Count()) file(s)" Importance="high" Condition="'@(PythonPackageFile)' != ''" />
   </Target>
 
   <!-- Build the Python wheel -->
@@ -246,7 +239,13 @@
     <Message Text="==================== Building Package ===================" Importance="high" />
     <MakeDir Directories="$(LocalWheelDirectory)" Condition="!Exists('$(LocalWheelDirectory)')" />
     <Error Text="PythonVersion property must be set in Directory.Build.props" Condition="'$(PythonVersion)' == ''" />
-    <Exec Command="uv build --wheel --python $(PythonVersion) --find-links &quot;$(LocalWheelDirectory)&quot; --out-dir &quot;$(LocalWheelDirectory)&quot;" WorkingDirectory="$(PythonPackagePath)" />
+    
+    <!-- <PropertyGroup>
+      <WheelDirPath>$(LocalWheelDirectory.TrimEnd('\'))</WheelDirPath>
+    </PropertyGroup> -->
+    
+    <!-- Build wheel using PythonVersion from Directory.Build.props with absolute find-links path -->
+    <Exec Command="uv build --wheel --python $(PythonVersion) --find-links $(LocalWheelDirectory) --out-dir $(LocalWheelDirectory)" WorkingDirectory="$(PythonPackagePath)" />
   </Target>
 
   <!-- Clean generated files -->
