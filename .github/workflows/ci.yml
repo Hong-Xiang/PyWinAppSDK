@@ -41,21 +41,15 @@ jobs:
         dotnet restore Headers/Headers.proj
         dotnet restore FullBuild/FullBuild.proj
 
+    - name: Build All Packages
+      shell: pwsh
+      run: .\rebuildAll.ps1
+
     - name: Install Windows App SDK Runtime 1.8
       shell: pwsh
       run: |
-        Write-Host "Installing Windows App SDK Runtime 1.8..."
-        $packageName = "Microsoft.WindowsAppRuntime.1.8"
-        
-        # Download and install the Windows App SDK Runtime
-        $installerUrl = "https://aka.ms/windowsappsdk/1.8/latest/windowsappruntimeinstall-x64.exe"
-        $installerPath = "$env:TEMP\windowsappruntimeinstall.exe"
-        
-        Write-Host "Downloading from $installerUrl..."
-        Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
-        
-        Write-Host "Installing Windows App SDK Runtime..."
-        Start-Process -FilePath $installerPath -ArgumentList "--quiet" -Wait -NoNewWindow
+        Write-Host "Installing Windows App SDK Runtime 1.8 via winget..."
+        winget install --id Microsoft.WindowsAppRuntime.1.8 --silent --accept-package-agreements --accept-source-agreements
         
         Write-Host "Verifying installation..."
         $installed = Get-AppxPackage -Name "*WindowsAppRuntime*" | Where-Object { $_.Version -like "1.8.*" }
@@ -64,12 +58,10 @@ jobs:
           Write-Host "  Version: $($installed.Version)"
           Write-Host "  Architecture: $($installed.Architecture)"
         } else {
-          Write-Warning "Installation completed but package verification failed"
+          Write-Warning "Installation verification: WindowsAppRuntime package not found via Get-AppxPackage"
+          Write-Host "Checking winget list..."
+          winget list --id Microsoft.WindowsAppRuntime.1.8
         }
-
-    - name: Build All Packages
-      shell: pwsh
-      run: .\rebuildAll.ps1
 
     - name: Run Integration Tests
       shell: pwsh

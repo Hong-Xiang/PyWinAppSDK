@@ -2,7 +2,7 @@
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <PackagesDirectory>$(MSBuildThisFileDirectory)packages\</PackagesDirectory>
-        <LocalWheelDirectory>$(MSBuildThisFileDirectory)wheels\</LocalWheelDirectory>
+        <LocalWheelDirectory>$(MSBuildThisFileDirectory)wheels</LocalWheelDirectory>
         <RestorePackagesPath>$(PackagesDirectory)</RestorePackagesPath>
         <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
         <PyWinRTVersion>3.2.1</PyWinRTVersion>

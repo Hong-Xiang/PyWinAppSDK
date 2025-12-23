@@ -230,7 +230,22 @@
 
     <!-- Copy static package files (pyproject.toml, README.md defined in Directory.Build.props) -->
     <Message Text="Copying static package files..." Importance="high" Condition="'@(PythonPackageFile)' != ''" />
-    <Copy SourceFiles="@(PythonPackageFile)" DestinationFolder="$(PythonPackagePath)" SkipUnchangedFiles="true" Condition="'@(PythonPackageFile)' != ''" />
+    
+    <!-- Separate files based on whether they have Link metadata (custom destination) -->
+    <ItemGroup>
+      <SimpleCopyFiles Include="@(PythonPackageFile)" Condition="'%(PythonPackageFile.Link)' == ''" />
+      <LinkCopyFiles Include="@(PythonPackageFile)" Condition="'%(PythonPackageFile.Link)' != ''" />
+    </ItemGroup>
+    
+    <!-- Copy simple files to package root -->
+    <Copy SourceFiles="@(SimpleCopyFiles)" DestinationFolder="$(PythonPackagePath)" SkipUnchangedFiles="true" Condition="'@(SimpleCopyFiles)' != ''" />
+    
+    <!-- Copy files with Link metadata to their specified destination -->
+    <Copy SourceFiles="@(LinkCopyFiles)" 
+          DestinationFiles="@(LinkCopyFiles->'$(PythonPackagePath)\%(Link)')" 
+          SkipUnchangedFiles="true" 
+          Condition="'@(LinkCopyFiles)' != ''" />
+    
     <Message Text="  Copied @(PythonPackageFile->Count()) file(s)" Importance="high" Condition="'@(PythonPackageFile)' != ''" />
   </Target>
 
@@ -239,10 +254,6 @@
     <Message Text="==================== Building Package ===================" Importance="high" />
     <MakeDir Directories="$(LocalWheelDirectory)" Condition="!Exists('$(LocalWheelDirectory)')" />
     <Error Text="PythonVersion property must be set in Directory.Build.props" Condition="'$(PythonVersion)' == ''" />
-    
-    <!-- <PropertyGroup>
-      <WheelDirPath>$(LocalWheelDirectory.TrimEnd('\'))</WheelDirPath>
-    </PropertyGroup> -->
     
     <!-- Build wheel using PythonVersion from Directory.Build.props with absolute find-links path -->
     <Exec Command="uv build --wheel --python $(PythonVersion) --find-links $(LocalWheelDirectory) --out-dir $(LocalWheelDirectory)" WorkingDirectory="$(PythonPackagePath)" />

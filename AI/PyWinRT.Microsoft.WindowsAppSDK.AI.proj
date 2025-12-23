@@ -54,7 +54,6 @@
   <!-- Python runtime dependencies (required for type marshalling at runtime) -->
   <ItemGroup>
     <PythonDependency Include="winappsdk-Foundation" />
-    <PythonDependency Include="winappsdk-InteractiveExperiences" />
     <PythonDependency Include="winrt-Windows.Foundation" />
     <PythonDependency Include="winrt-Windows.Foundation.Collections" />
     <PythonDependency Include="winrt-Windows.Graphics.Imaging" />

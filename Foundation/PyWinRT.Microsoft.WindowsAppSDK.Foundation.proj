@@ -58,6 +58,14 @@
     <PythonDependency Include="winrt-Windows.Storage" />
   </ItemGroup>
 
+  <!-- Foundation-specific package files -->
+  <ItemGroup>
+    <!-- Bootstrap Python module with preserved structure using Link metadata -->
+    <PythonPackageFile Include="$(MSBuildProjectDirectory)\winappsdk\bootstrap\**\*.*">
+      <Link>winappsdk\bootstrap\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </PythonPackageFile>
+  </ItemGroup>
+
   <!--  
     Copy Windows App SDK Bootstrap DLL to package for all architectures.
     This allows Python code to initialize the runtime without manual DLL discovery.
@@ -93,30 +101,6 @@
     <Message Text="  Copied %(BootstrapDLL.TargetArch)\Microsoft.WindowsAppRuntime.Bootstrap.dll" 
              Importance="high" 
              Condition="Exists('%(BootstrapDLL.Identity)')" />
-  </Target>
-
-  <!-- Copy Bootstrap Python module to package -->
-  <Target Name="CopyBootstrapModule" AfterTargets="CopyBootstrapDLLs">
-    <PropertyGroup>
-      <BootstrapSourceDir>$(MSBuildProjectDirectory)\winappsdk\bootstrap</BootstrapSourceDir>
-    </PropertyGroup>
-    
-    <Message Text="Copying Bootstrap Python module..." Importance="high" />
-    <Message Text="  Source: $(BootstrapSourceDir)" Importance="high" />
-    <Message Text="  Dest: $(PythonPackagePath)\winappsdk\bootstrap" Importance="high" />
-    
-    <!-- Copy the bootstrap folder with all its contents -->
-    <ItemGroup>
-      <BootstrapPyFiles Include="$(BootstrapSourceDir)\**\*.*" />
-    </ItemGroup>
-    
-    <Message Text="  Found @(BootstrapPyFiles->Count()) file(s) to copy" Importance="high" />
-    
-    <Copy SourceFiles="@(BootstrapPyFiles)" 
-          DestinationFolder="$(PythonPackagePath)\winappsdk\bootstrap\%(RecursiveDir)" 
-          SkipUnchangedFiles="true" />
-    
-    <Message Text="  ✓ Copied bootstrap module to package" Importance="high" />
   </Target>
 
 </Project>
