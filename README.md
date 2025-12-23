@@ -112,3 +112,5 @@ uv run test_integration.py
 ## Known Limitations
 
 - **Background Task**: `Microsoft.Windows.ApplicationModel.Background.UniversalBGTask` generation is skipped due to a WinAppSDK bug with `ITask`. See [pywinrt workaround](https://github.com/pywinrt/pywinrt/commit/a57d450cea4bc5c23f15e721e9908adb4fab805e) and [WinAppSDK fix](https://github.com/microsoft/WindowsAppSDK/pull/5313).
+
+- WebView2 package is referenced with wrong namespace

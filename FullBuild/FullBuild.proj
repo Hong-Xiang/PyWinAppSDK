@@ -11,6 +11,9 @@
       <ComponentProjects Include="..\AI\PyWinRT.Microsoft.WindowsAppSDK.AI.proj" />
       <ComponentProjects Include="..\Foundation\PyWinRT.Microsoft.WindowsAppSDK.Foundation.proj" />
       <ComponentProjects Include="..\InteractiveExperiences\InteractiveExperiences.proj" />
+      <ComponentProjects Include="..\Widgets\Widgets.proj" />
+      <ComponentProjects Include="..\ML\ML.proj" />
+      <ComponentProjects Include="..\WinUI\WinUI.proj" />
     </ItemGroup>
     <MSBuild Projects="@(ComponentProjects)" 
              Targets="Restore" 
@@ -28,6 +31,9 @@
       <ComponentProjects Include="..\AI\PyWinRT.Microsoft.WindowsAppSDK.AI.proj" />
       <ComponentProjects Include="..\Foundation\PyWinRT.Microsoft.WindowsAppSDK.Foundation.proj" />
       <ComponentProjects Include="..\InteractiveExperiences\InteractiveExperiences.proj" />
+      <ComponentProjects Include="..\Widgets\Widgets.proj" />
+      <ComponentProjects Include="..\ML\ML.proj" />
+      <ComponentProjects Include="..\WinUI\WinUI.proj" />
     </ItemGroup>
     <MSBuild Projects="@(ComponentProjects)" 
              Targets="Build" 
@@ -40,6 +46,9 @@
   <Target Name="Clean">
     <Message Text="Cleaning component projects..." Importance="high" />
     <ItemGroup>
+      <ComponentProjects Include="..\Widgets\Widgets.proj" />
+      <ComponentProjects Include="..\ML\ML.proj" />
+      <ComponentProjects Include="..\WinUI\WinUI.proj" />
       <ComponentProjects Include="..\AI\PyWinRT.Microsoft.WindowsAppSDK.AI.proj" />
       <ComponentProjects Include="..\Foundation\PyWinRT.Microsoft.WindowsAppSDK.Foundation.proj" />
       <ComponentProjects Include="..\InteractiveExperiences\InteractiveExperiences.proj" />

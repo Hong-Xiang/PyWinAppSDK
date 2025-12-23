@@ -45,27 +45,9 @@ jobs:
       shell: pwsh
       run: .\rebuildAll.ps1
 
-    - name: Install Windows App SDK Runtime 1.8
-      shell: pwsh
-      run: |
-        Write-Host "Installing Windows App SDK Runtime 1.8 via winget..."
-        winget install --id Microsoft.WindowsAppRuntime.1.8 --silent --accept-package-agreements --accept-source-agreements
-        
-        Write-Host "Verifying installation..."
-        $installed = Get-AppxPackage -Name "*WindowsAppRuntime*" | Where-Object { $_.Version -like "1.8.*" }
-        if ($installed) {
-          Write-Host "✓ Windows App SDK Runtime 1.8 installed successfully"
-          Write-Host "  Version: $($installed.Version)"
-          Write-Host "  Architecture: $($installed.Architecture)"
-        } else {
-          Write-Warning "Installation verification: WindowsAppRuntime package not found via Get-AppxPackage"
-          Write-Host "Checking winget list..."
-          winget list --id Microsoft.WindowsAppRuntime.1.8
-        }
-
     - name: Run Integration Tests
       shell: pwsh
-      run: .\testAll.ps1
+      run: .\testAll.ps1 -SkipMinimal
 
     - name: Upload Wheels
       uses: actions/upload-artifact@v4

@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <!--
+    PyWinRT Python package for Microsoft.WindowsAppSDK.WinUI
+    
+    Depends on winappsdk-Foundation and winappsdk-InteractiveExperiences.
+  -->
+
+  <PropertyGroup>
+    <PackageName>winappsdk-WinUI</PackageName>
+  </PropertyGroup>
+
+  <!-- Trigger Python package generation after Build -->
+  <Target Name="BuildPythonPackage" AfterTargets="Build" DependsOnTargets="GeneratePythonProject" />
+
+  <ItemGroup>
+    <!-- NuGet Package References -->
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Windows.SDK.CPP" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Windows.CppWinRT" GeneratePathProperty="true" />
+    <PackageDownload Include="PyWinRT" Version="[$(PyWinRTVersion)]" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
+    
+    <!-- Build tasks for WinMD resolution -->
+    <PackageReference Include="PyWinAppSDK.Build.Tasks" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Resolve WinMD files dynamically using ResolveWinMDReferences -->
+  <Target Name="ResolveComponentWinMDs" BeforeTargets="BuildWinMDArguments">
+    <ResolveWinMDReferences
+      AssetsFilePath="$(ProjectAssetsFile)"
+      InputPackages="Microsoft.WindowsAppSDK.WinUI"
+      ExcludePackages="Microsoft.Windows.SDK.CPP"
+      WinMDFolders="@(WinMDFolder)">
+      <Output TaskParameter="InputWinMD" ItemName="ResolvedInputWinMD" />
+      <Output TaskParameter="ReferencedWinMD" ItemName="ResolvedReferencedWinMD" />
+    </ResolveWinMDReferences>
+
+    <!-- Set up InputWinMD and ReferenceWinMD from resolved items -->
+    <ItemGroup>
+      <InputWinMD Include="@(ResolvedInputWinMD)">
+        <PyPackageName>$(PackageName)</PyPackageName>
+      </InputWinMD>
+      <ReferenceWinMD Include="@(ResolvedReferencedWinMD)">
+        <PyPackageName>winappsdk</PyPackageName>
+      </ReferenceWinMD>
+    </ItemGroup>
+  </Target>
+
+  <!-- Python runtime dependencies (required for type marshalling at runtime) -->
+  <ItemGroup>
+    <PythonDependency Include="winrt-Windows.Foundation" />
+    <PythonDependency Include="winrt-Windows.Foundation.Collections" />
+    <PythonDependency Include="winappsdk-Foundation" />
+    <PythonDependency Include="winappsdk-InteractiveExperiences" />
+  </ItemGroup>
+</Project>

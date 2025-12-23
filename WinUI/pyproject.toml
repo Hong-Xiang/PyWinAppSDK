@@ -1,0 +1,58 @@
+[build-system]
+requires = [
+    "setuptools>=78", 
+    "winrt-sdk",
+    "winappsdk-headers",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "winappsdk-WinUI"
+dynamic = ["version"]
+description = "Python projection of Windows Runtime (WinRT) APIs - WinUI Package"
+readme = "README.md"
+license = {text = "MIT"}
+classifiers = [
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Intended Audience :: Developers",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "winrt-runtime",
+    "winappsdk-Foundation",
+    "winappsdk-InteractiveExperiences",
+    "winrt-Windows.Foundation",
+    "winrt-Windows.Foundation.Collections",
+]
+
+[project.urls]
+Repository = "https://github.com/pywinrt/pywinappsdk"
+Documentation = "https://pywinrt.readthedocs.io"
+
+[tool.setuptools.packages.find]
+where = ["."]
+# Include both component-specific packages and winappsdk namespace packages
+include = [
+    "winappsdk_WinUI",
+    "winappsdk_WinUI.*",
+    "winappsdk",
+    "winappsdk.*",
+]
+
+[tool.setuptools.package-data]
+"*" = ["*.pyi", "py.typed"]
+
+[tool.setuptools.dynamic]
+version = {file = "version.txt"}
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+pythonpath = ["."]
+
+[tool.mypy]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true

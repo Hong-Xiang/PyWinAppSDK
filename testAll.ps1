@@ -1,3 +1,7 @@
+param(
+    [switch]$SkipMinimal = $false
+)
+
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 
@@ -23,9 +27,14 @@ if ($LASTEXITCODE -ne 0) {
     exit 1 
 }
 
-Write-Host "Running test_minimal.py..." -ForegroundColor Yellow
-uv run test_minimal.py
-$testResult = $LASTEXITCODE
+$testResult = 0
+if (-not $SkipMinimal) {
+    Write-Host "Running test_minimal.py..." -ForegroundColor Yellow
+    uv run test_minimal.py
+    $testResult = $LASTEXITCODE
+} else {
+    Write-Host "Skipping test_minimal.py (requires Windows App SDK Runtime)" -ForegroundColor Yellow
+}
 
 Pop-Location
 

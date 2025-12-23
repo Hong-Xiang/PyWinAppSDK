@@ -26,6 +26,9 @@
     <ItemGroup>
         <WinMDFolder Include="metadata" />
         <WinMDFolder Include="metadata\10.0.18362.0" />
+
+        <!-- WebView2 -->
+        <WinMDFolder Include="lib" />
     </ItemGroup>
 
     <!-- Common static package files for all component packages -->
