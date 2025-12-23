@@ -244,17 +244,9 @@
   <!-- Build the Python wheel -->
   <Target Name="GeneratePythonProject" DependsOnTargets="GeneratePythonProjectFiles">
     <Message Text="==================== Building Package ===================" Importance="high" />
-
     <MakeDir Directories="$(LocalWheelDirectory)" Condition="!Exists('$(LocalWheelDirectory)')" />
-
-    <!-- Build directly from package path. Use PythonPath property if specified, otherwise use PythonVersion -->
-    <!-- find-links is configured in pyproject.toml [tool.uv] with correct relative path (../../../wheels from obj/pkg) -->
-    <PropertyGroup>
-      <UvBuildCommand Condition="'$(PythonPath)' != ''">uv build --wheel --python &quot;$(PythonPath)&quot; --out-dir $(LocalWheelDirectory)</UvBuildCommand>
-      <UvBuildCommand Condition="'$(PythonPath)' == '' and '$(PythonVersion)' != ''">uv build --wheel --python $(PythonVersion) --out-dir $(LocalWheelDirectory)</UvBuildCommand>
-      <UvBuildCommand Condition="'$(PythonPath)' == '' and '$(PythonVersion)' == ''">uv build --wheel --out-dir $(LocalWheelDirectory)</UvBuildCommand>
-    </PropertyGroup>
-    <Exec Command="$(UvBuildCommand)" WorkingDirectory="$(PythonPackagePath)" />
+    <Error Text="PythonVersion property must be set in Directory.Build.props" Condition="'$(PythonVersion)' == ''" />
+    <Exec Command="uv build --wheel --python $(PythonVersion) --find-links &quot;$(LocalWheelDirectory)&quot; --out-dir &quot;$(LocalWheelDirectory)&quot;" WorkingDirectory="$(PythonPackagePath)" />
   </Target>
 
   <!-- Clean generated files -->
