@@ -1,0 +1,58 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+  </PropertyGroup>
+
+  <Target Name="Restore">
+    <Message Text="Restoring Component Packages..." Importance="high" />
+
+    <!-- Restore Components -->
+    <ItemGroup>
+      <ComponentProjects Include="..\AI\PyWinRT.Microsoft.WindowsAppSDK.AI.proj" />
+      <ComponentProjects Include="..\Foundation\PyWinRT.Microsoft.WindowsAppSDK.Foundation.proj" />
+      <ComponentProjects Include="..\InteractiveExperiences\InteractiveExperiences.proj" />
+      <ComponentProjects Include="..\Widgets\Widgets.proj" />
+      <ComponentProjects Include="..\ML\ML.proj" />
+      <ComponentProjects Include="..\WinUI\WinUI.proj" />
+    </ItemGroup>
+    <MSBuild Projects="@(ComponentProjects)" 
+             Targets="Restore" 
+             Properties="Configuration=$(Configuration)" 
+             BuildInParallel="true" />
+             
+    <Message Text="Component Package Restore Completed Successfully." Importance="high" />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="Restore">
+    <Message Text="Building Component Packages..." Importance="high" />
+
+    <!-- Build Components in Parallel -->
+    <ItemGroup>
+      <ComponentProjects Include="..\AI\PyWinRT.Microsoft.WindowsAppSDK.AI.proj" />
+      <ComponentProjects Include="..\Foundation\PyWinRT.Microsoft.WindowsAppSDK.Foundation.proj" />
+      <ComponentProjects Include="..\InteractiveExperiences\InteractiveExperiences.proj" />
+      <ComponentProjects Include="..\Widgets\Widgets.proj" />
+      <ComponentProjects Include="..\ML\ML.proj" />
+      <ComponentProjects Include="..\WinUI\WinUI.proj" />
+    </ItemGroup>
+    <MSBuild Projects="@(ComponentProjects)" 
+             Targets="Build" 
+             Properties="Configuration=$(Configuration)" 
+             BuildInParallel="true" />
+             
+    <Message Text="Component Package Build Completed Successfully." Importance="high" />
+  </Target>
+
+  <Target Name="Clean">
+    <Message Text="Cleaning component projects..." Importance="high" />
+    <ItemGroup>
+      <ComponentProjects Include="..\Widgets\Widgets.proj" />
+      <ComponentProjects Include="..\ML\ML.proj" />
+      <ComponentProjects Include="..\WinUI\WinUI.proj" />
+      <ComponentProjects Include="..\AI\PyWinRT.Microsoft.WindowsAppSDK.AI.proj" />
+      <ComponentProjects Include="..\Foundation\PyWinRT.Microsoft.WindowsAppSDK.Foundation.proj" />
+      <ComponentProjects Include="..\InteractiveExperiences\InteractiveExperiences.proj" />
+    </ItemGroup>
+    <MSBuild Projects="@(ComponentProjects)" Targets="Clean" Properties="Configuration=$(Configuration)" BuildInParallel="true" />
+  </Target>
+</Project>

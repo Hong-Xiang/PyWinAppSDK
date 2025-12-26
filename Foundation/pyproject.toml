@@ -1,0 +1,58 @@
+[build-system]
+requires = [
+    "setuptools>=78", 
+    "winrt-sdk",
+    "winappsdk-headers",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "winappsdk-Foundation"
+dynamic = ["version"]
+description = "Python projection of Windows Runtime (WinRT) APIs - Foundation Package"
+readme = "README.md"
+license = {text = "MIT"}
+classifiers = [
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Intended Audience :: Developers",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "winrt-runtime",
+    "winappsdk-InteractiveExperiences",
+    "winrt-Windows.Foundation",
+    "winrt-Windows.Foundation.Collections",
+    "winrt-Windows.Storage",
+]
+
+[project.urls]
+Documentation = "https://pywinrt.readthedocs.io"
+Repository = "https://github.com/pywinrt/pywinrt"
+Changelog = "https://github.com/pywinrt/pywinrt/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+# Include both component-specific packages and winappsdk namespace packages
+include = [
+    "winappsdk_Foundation",
+    "winappsdk_Foundation.*",
+    "winappsdk",
+    "winappsdk.*",
+]
+
+[tool.setuptools.package-data]
+"*" = ["*.pyi", "py.typed"]
+"winappsdk" = ["win-x64/*.dll", "win-x86/*.dll", "win-arm64/*.dll"]
+
+[tool.setuptools.dynamic]
+version = {file = "version.txt"}
+
+[tool.cibuildwheel]
+before-build = "uv pip install setuptools"
+skip = "pp*"
+test-skip = "*-win_arm64"
+
+[tool.cibuildwheel.windows]
+archs = ["x86", "AMD64", "ARM64"]

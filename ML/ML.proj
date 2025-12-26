@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <!--
-    PyWinRT Python package for Microsoft.WindowsAppSDK.AI
+    PyWinRT Python package for Microsoft.WindowsAppSDK.ML
     
     Depends on winappsdk-Foundation and winappsdk-InteractiveExperiences.
   -->
 
   <PropertyGroup>
-    <PackageName>winappsdk-AI</PackageName>
+    <PackageName>winappsdk-ML</PackageName>
   </PropertyGroup>
 
   <!-- Trigger Python package generation after Build -->
@@ -21,7 +21,7 @@
     <PackageReference Include="Microsoft.Windows.SDK.CPP" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.Windows.CppWinRT" GeneratePathProperty="true" />
     <PackageDownload Include="PyWinRT" Version="[$(PyWinRTVersion)]" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.AI" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.ML" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
     <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
     <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
     
@@ -33,7 +33,7 @@
   <Target Name="ResolveComponentWinMDs" BeforeTargets="BuildWinMDArguments">
     <ResolveWinMDReferences
       AssetsFilePath="$(ProjectAssetsFile)"
-      InputPackages="Microsoft.WindowsAppSDK.AI"
+      InputPackages="Microsoft.WindowsAppSDK.ML"
       ExcludePackages="Microsoft.Windows.SDK.CPP"
       WinMDFolders="@(WinMDFolder)">
       <Output TaskParameter="InputWinMD" ItemName="ResolvedInputWinMD" />
@@ -53,11 +53,9 @@
 
   <!-- Python runtime dependencies (required for type marshalling at runtime) -->
   <ItemGroup>
-    <PythonDependency Include="winappsdk-Foundation" />
     <PythonDependency Include="winrt-Windows.Foundation" />
     <PythonDependency Include="winrt-Windows.Foundation.Collections" />
-    <PythonDependency Include="winrt-Windows.Graphics.Imaging" />
-    <PythonDependency Include="winrt-Windows.Storage.Streams" />
+    <PythonDependency Include="winappsdk-Foundation" />
+    <PythonDependency Include="winappsdk-InteractiveExperiences" />
   </ItemGroup>
-
 </Project>

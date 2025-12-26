@@ -20,20 +20,34 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
-    - name: Setup Python 3.11
+    - name: Setup Python 3.12
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11' 
+        python-version: '3.12' 
 
     - name: Install uv
-      run: pip install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+        cache-dependency-glob: "**/pyproject.toml"
 
-    - name: Build Build Tasks
-      run: dotnet build PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj -c Release
+    - name: Restore and Build Build Tasks
+      run: |
+        dotnet restore PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj
+        dotnet build PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj -c Release --no-restore
 
-    - name: Run Rebuild and Test Script
+    - name: Restore Headers and Component Packages
+      run: |
+        dotnet restore Headers/Headers.proj
+        dotnet restore FullBuild/FullBuild.proj
+
+    - name: Build All Packages
       shell: pwsh
-      run: .\rebuild_and_test.ps1
+      run: .\rebuildAll.ps1
+
+    - name: Run Integration Tests
+      shell: pwsh
+      run: .\testAll.ps1 -SkipMinimal
 
     - name: Upload Wheels
       uses: actions/upload-artifact@v4
