@@ -9,9 +9,6 @@
     <PackageName>winappsdk-WinUI</PackageName>
   </PropertyGroup>
 
-  <!-- Trigger Python package generation after Build -->
-  <Target Name="BuildPythonPackage" AfterTargets="Build" DependsOnTargets="GeneratePythonProject" />
-
   <ItemGroup>
     <!-- NuGet Package References -->
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX">
@@ -55,7 +52,12 @@
   <ItemGroup>
     <PythonDependency Include="winrt-Windows.Foundation" />
     <PythonDependency Include="winrt-Windows.Foundation.Collections" />
+    <PythonDependency Include="winrt-Windows.UI" />
     <PythonDependency Include="winappsdk-Foundation" />
     <PythonDependency Include="winappsdk-InteractiveExperiences" />
   </ItemGroup>
+
+  <!-- Trigger Python package generation after Build -->
+  <Target Name="BuildPythonPackage" AfterTargets="Build" DependsOnTargets="GeneratePythonProject" />
+
 </Project>
