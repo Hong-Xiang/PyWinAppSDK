@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Setup Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12' 
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+        cache-dependency-glob: "**/pyproject.toml"
+
+    - name: Restore and Build Build Tasks
+      run: |
+        dotnet restore PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj
+        dotnet build PyWinAppSDK.Build.Tasks/PyWinAppSDK.Build.Tasks.csproj -c Release --no-restore
+
+    - name: Restore Headers and Component Packages
+      run: |
+        dotnet restore Headers/Headers.proj
+        dotnet restore FullBuild/FullBuild.proj
+
+    - name: Build All Packages
+      shell: pwsh
+      run: .\rebuildAll.ps1
+
+    - name: Run Integration Tests
+      shell: pwsh
+      run: .\testAll.ps1 -SkipMinimal
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          wheels/*.whl
+          localpackages/*.nupkg
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
