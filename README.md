@@ -6,21 +6,8 @@ This project provides a modular, high-performance Python binding for Windows App
 
 ## Installation
 
-You can install the components directly from this repository using `pip` or `uv`.
-
-### Using `uv` (Recommended)
-
-```bash
-# Install specific components
-uv add "git+https://github.com/Hong-Xiang/PyWinAppSDK.git#subdirectory=Foundation"
-uv add "git+https://github.com/Hong-Xiang/PyWinAppSDK.git#subdirectory=InteractiveExperiences"
-```
-
-### Using `pip`
-
-```bash
-pip install "git+https://github.com/Hong-Xiang/PyWinAppSDK.git#subdirectory=Foundation"
-```
+Currently packages is not published to PyPI yet for waiting it to be more polished. You can download the latest wheels from the [GitHub Releases](https://github.com/Hong-Xiang/PyWinAppSDK/releases).
+Put it into local wheel folder. and samples/tests folder would work since pyproject.toml is configured to use local wheel folder as extra index in `[tool.uv]`.
 
 ## Usage
 

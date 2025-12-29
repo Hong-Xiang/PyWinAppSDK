@@ -33,4 +33,4 @@ dependencies = [
 ]
 
 [tool.uv]
-find-links = ["../wheels"]
+find-links = ["../../wheels"]
