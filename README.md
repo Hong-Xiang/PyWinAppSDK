@@ -1,116 +1,54 @@
 # PyWinAppSDK
 
-Python projection for Windows App SDK using a **unified namespace** (`winappsdk.*`) with **modular component wheels**.
+Python projection for the [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) based on [PyWinRT](https://github.com/microsoft/pywinrt).
 
-## Architecture
+This project provides a modular, high-performance Python binding for Windows App SDK APIs, allowing Python developers to build modern Windows applications with features like WinUI 3, Windowing, App Lifecycle, and AI.
 
-### Dual-Folder Structure
+## Installation
 
-To support PEP 420 namespace packages and avoid binary conflicts:
+You can install the components directly from this repository using `pip` or `uv`.
 
-| Folder | Contents | Purpose |
-|--------|----------|---------|
-| `winappsdk/` | Python modules (`.py`) | Shared namespace, merged by pip |
-| `winappsdk_<Component>/` | Native extensions (`.pyd`), type stubs (`.pyi`) | Component-specific binaries |
+### Using `uv` (Recommended)
 
-### Package Hierarchy
-
-```
-site-packages/
-├── winappsdk/                                    # Merged namespace (PEP 420)
-│   └── microsoft/
-│       ├── ui/windowing/                         # From InteractiveExperiences
-│       ├── ui/composition/                       # From InteractiveExperiences
-│       ├── windows/applifecycle/                 # From Foundation
-│       ├── windows/applicationmodel/resources/   # From Foundation
-│       └── windows/ai/                           # From AI
-├── winappsdk_InteractiveExperiences/             # Native binaries
-├── winappsdk_Foundation/                         # Native binaries
-└── winappsdk_AI/                                 # Native binaries
+```bash
+# Install specific components
+uv add "git+https://github.com/Hong-Xiang/PyWinAppSDK.git#subdirectory=Foundation"
+uv add "git+https://github.com/Hong-Xiang/PyWinAppSDK.git#subdirectory=InteractiveExperiences"
 ```
 
-### Components
+### Using `pip`
 
-| Component | Description | Dependencies |
-|-----------|-------------|--------------|
-| **Headers** | Shared C++ headers from cppwinrt/pywinrt | — |
-| **InteractiveExperiences** | UI, Windowing, Composition | Headers |
-| **Foundation** | App lifecycle, Resources | Headers |
-| **AI** | Machine Learning, OCR | Headers, Foundation |
+```bash
+pip install "git+https://github.com/Hong-Xiang/PyWinAppSDK.git#subdirectory=Foundation"
+```
 
 ## Usage
 
-### Basic Imports
+All components share the unified `winappsdk` namespace.
 
 ```python
 from winappsdk.microsoft.ui.windowing import AppWindow
-from winappsdk.microsoft.ui.composition import Compositor
 from winappsdk.microsoft.windows.applifecycle import AppInstance
-from winappsdk.microsoft.windows.applicationmodel.resources import ResourceManager
-from winappsdk.microsoft.windows.ai import AIFeatureReadyResult
+
+# Use Windows App SDK APIs
+app_instance = AppInstance.get_current()
 ```
 
-### Bootstrap Initialization
+## Development
 
-For applications using Windows App SDK features, initialize the runtime first:
-
-```python
-from winappsdk.bootstrap import initialize_windows_app_sdk, BootstrapInitializeOptions
-
-# Initialize Windows App SDK runtime
-with initialize_windows_app_sdk(
-    options=BootstrapInitializeOptions.ON_ERROR_SHOW_UI,
-    verbose=True
-):
-    # Your Windows App SDK code here
-    from winappsdk.microsoft.ui import WindowId
-    from winappsdk.microsoft.windows.storage.pickers import FileOpenPicker
-    
-    # Use Windows App SDK features
-    picker = FileOpenPicker(window_id)
-    # ...
-```
-
-## Building
-
-### Quick Build & Test
-
+### Build All Components
+To build all wheels and NuGet packages locally:
 ```powershell
-.\rebuild_and_test.ps1
+.\rebuildAll.ps1
 ```
 
-### Manual Build
-
+### Run Tests
 ```powershell
-# 1. Build the MSBuild tasks (required first, provides WinMD resolution)
-cd PyWinAppSDK.Build.Tasks
-dotnet build -c Release
-
-# 2. Build order matters: Headers → InteractiveExperiences → Foundation → AI
-cd ..
-dotnet build Headers
-dotnet build InteractiveExperiences
-dotnet build Foundation
-dotnet build AI
+.\testAll.ps1
 ```
 
-### Run Tests Only
-
+### Download Pre-built Wheels
+To download the latest wheels from GitHub Releases:
 ```powershell
-cd test
-uv sync
-uv run test_integration.py
+.\scripts\download-wheels.ps1
 ```
-
-## Technical Notes
-
-- **PEP 420**: No `__init__.py` in `winappsdk/` or `winappsdk/microsoft/` to allow namespace merging
-- **Native Naming**: Extensions use unique names like `_winappsdk_<comp>_microsoft_...pyd`
-- **Build Tooling**: Uses `uv` for wheel compilation
-- **Bootstrap**: The Foundation package includes `Microsoft.WindowsAppRuntime.Bootstrap.dll` for all architectures (x64, x86, arm64) to initialize the Windows App SDK runtime
-
-## Known Limitations
-
-- **Background Task**: `Microsoft.Windows.ApplicationModel.Background.UniversalBGTask` generation is skipped due to a WinAppSDK bug with `ITask`. See [pywinrt workaround](https://github.com/pywinrt/pywinrt/commit/a57d450cea4bc5c23f15e721e9908adb4fab805e) and [WinAppSDK fix](https://github.com/microsoft/WindowsAppSDK/pull/5313).
-
-- WebView2 package is referenced with wrong namespace
