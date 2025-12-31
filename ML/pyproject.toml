@@ -23,8 +23,9 @@ dependencies = [
     "winrt-runtime",
     "winappsdk-Foundation",
     "winappsdk-InteractiveExperiences",
-    "winrt-Windows.Foundation",
-    "winrt-Windows.Foundation.Collections",
+    "winrt-Windows.ApplicationModel[all]~=3.2.1.0",
+    "winrt-Windows.Foundation.Collections[all]~=3.2.1.0",
+    "winrt-Windows.Foundation[all]~=3.2.1.0",
 ]
 
 [project.urls]

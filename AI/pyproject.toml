@@ -20,13 +20,14 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "winrt-runtime",
+    "winrt-runtime~=3.2.1.0",
     "winappsdk-Foundation",
     "winappsdk-InteractiveExperiences",
-    "winrt-Windows.Foundation",
-    "winrt-Windows.Foundation.Collections",
-    "winrt-Windows.Graphics.Imaging",
-    "winrt-Windows.Storage.Streams",
+    "winrt-Windows.Foundation.Collections[all]~=3.2.1.0",
+    "winrt-Windows.Foundation[all]~=3.2.1.0",
+    "winrt-Windows.Graphics.Imaging[all]~=3.2.1.0",
+    "winrt-Windows.Graphics[all]~=3.2.1.0",
+    "winrt-Windows.Storage.Streams[all]~=3.2.1.0",
 ]
 
 [project.urls]

@@ -1,0 +1,37 @@
+[project]
+name = "sparseapp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "winappsdk-headers",
+    "winappsdk-foundation",
+    "winappsdk-ai",
+    "winappsdk-interactiveexperiences",
+    "winappsdk-ml",
+    "winappsdk-winui",
+    "winappsdk-widgets",
+    "winrt-Windows.UI",
+    "winrt-Windows.UI.XAML",
+    "winrt-Windows.Foundation[all]~=3.2.1.0",
+    "winrt-Windows.Storage.Streams[all]~=3.2.1.0",
+    "winrt-Windows.UI[all]~=3.2.1.0",
+    "winrt-Windows.UI.Text[all]~=3.2.1.0",
+    "winrt-Windows.ApplicationModel[all]~=3.2.1.0",
+    "winrt-Windows.ApplicationModel.Activation[all]~=3.2.1.0",
+    "winrt-Windows.ApplicationModel.Core[all]~=3.2.1.0",
+    "winrt-Windows.ApplicationModel.DataTransfer[all]~=3.2.1.0",
+    "winrt-Windows.ApplicationModel.DataTransfer.DragDrop[all]~=3.2.1.0",
+    "winrt-Windows.Foundation[all]~=3.2.1.0",
+    "winrt-Windows.Foundation.Collections[all]~=3.2.1.0",
+    "winrt-Windows.Foundation.Numerics[all]~=3.2.1.0",
+    "winrt-Windows.Graphics.Imaging[all]~=3.2.1.0",
+    "winrt-Windows.UI[all]~=3.2.1.0",
+    "winrt-Windows.UI.Core[all]~=3.2.1.0",
+    "winrt-Windows.UI.Xaml.Interop[all]~=3.2.1.0"
+]
+
+[tool.uv]
+find-links = ["../../wheels"]

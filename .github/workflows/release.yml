@@ -1,14 +1,16 @@
-name: Build and Test
+name: Release
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags:
+      - 'v*'
 
 jobs:
-  build:
+  build-and-release:
     runs-on: windows-latest
+    permissions:
+      contents: write
+      pull-requests: read
     env:
       PYTHONIOENCODING: utf-8
 
@@ -49,18 +51,18 @@ jobs:
       shell: pwsh
       run: .\scripts\testAll.ps1 -SkipMinimal
 
-    - name: Upload Wheels
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: wheels
-        path: wheels/*.whl
-        retention-days: 5
+    - name: Zip Wheels
+      shell: pwsh
+      run: Compress-Archive -Path wheels/*.whl -DestinationPath wheels/pywinappsdk-wheels.zip
 
-    - name: Upload NuGet Packages
-      uses: actions/upload-artifact@v4
-      if: always()
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
       with:
-        name: localpackages
-        path: localpackages/*.nupkg
-        retention-days: 5
+        files: |
+          wheels/pywinappsdk-wheels.zip
+          localpackages/*.nupkg
+        generate_release_notes: false
+        draft: false
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
