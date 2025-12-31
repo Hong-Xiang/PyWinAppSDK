@@ -211,3 +211,5 @@ obj/
 bin/
 
 test/uv.lock
+
+.winapp/

@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$root = $PSScriptRoot
+$root = Split-Path -Parent $PSScriptRoot
 
 Write-Host "`n╔═══════════════════════════════════════════════╗" -ForegroundColor Cyan
 Write-Host "║   PyWinAppSDK Full Rebuild                    ║" -ForegroundColor Cyan

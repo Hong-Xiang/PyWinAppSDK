@@ -1,0 +1,17 @@
+[project]
+name = "winapp-pick"
+version = "0.1.0"
+description = "Simple WinApp SDK file picker example"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "winappsdk-Foundation"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+package = true
+find-links = ["../../wheels"]

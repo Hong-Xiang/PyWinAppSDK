@@ -37,24 +37,39 @@ try {
     }
 
     $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers
-    $assets = $release.assets | Where-Object { $_.name -like "*.whl" }
+    $zipAsset = $release.assets | Where-Object { $_.name -eq "pywinappsdk-wheels.zip" }
 
-    if ($null -eq $assets -or $assets.Count -eq 0) {
-        Write-Warning "No wheel files found in release '$($release.tag_name)'"
-        return
-    }
-
-    Write-Host "Found $($assets.Count) wheels in release $($release.tag_name)" -ForegroundColor Green
-
-    foreach ($asset in $assets) {
-        $destFile = Join-Path $OutDir $asset.name
-        Write-Host "Downloading $($asset.name)..." -ForegroundColor Yellow
+    if ($null -eq $zipAsset) {
+        Write-Warning "pywinappsdk-wheels.zip not found in release '$($release.tag_name)'. Falling back to individual .whl files."
+        $assets = $release.assets | Where-Object { $_.name -like "*.whl" }
         
-        # Use browser_download_url for public assets
-        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $destFile
+        if ($null -eq $assets -or $assets.Count -eq 0) {
+            Write-Warning "No wheel files found in release '$($release.tag_name)'"
+            return
+        }
+
+        Write-Host "Found $($assets.Count) wheels in release $($release.tag_name)" -ForegroundColor Green
+
+        foreach ($asset in $assets) {
+            $destFile = Join-Path $OutDir $asset.name
+            Write-Host "Downloading $($asset.name)..." -ForegroundColor Yellow
+            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $destFile
+        }
+    } else {
+        Write-Host "Found pywinappsdk-wheels.zip in release $($release.tag_name)" -ForegroundColor Green
+        $zipPath = Join-Path $OutDir "pywinappsdk-wheels.zip"
+        
+        Write-Host "Downloading pywinappsdk-wheels.zip..." -ForegroundColor Yellow
+        Invoke-WebRequest -Uri $zipAsset.browser_download_url -OutFile $zipPath
+        
+        Write-Host "Extracting wheels..." -ForegroundColor Yellow
+        Expand-Archive -Path $zipPath -DestinationPath $OutDir -Force
+        
+        Write-Host "Cleaning up zip file..." -ForegroundColor Gray
+        Remove-Item $zipPath
     }
 
-    Write-Host "`nSuccessfully downloaded all wheels to $OutDir" -ForegroundColor Green
+    Write-Host "`nSuccessfully downloaded and extracted all wheels to $OutDir" -ForegroundColor Green
 }
 catch {
     Write-Error "Failed to download wheels: $($_.Exception.Message)"

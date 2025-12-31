@@ -45,17 +45,21 @@ jobs:
 
     - name: Build All Packages
       shell: pwsh
-      run: .\rebuildAll.ps1
+      run: .\scripts\rebuildAll.ps1
 
     - name: Run Integration Tests
       shell: pwsh
-      run: .\testAll.ps1 -SkipMinimal
+      run: .\scripts\testAll.ps1 -SkipMinimal
+
+    - name: Zip Wheels
+      shell: pwsh
+      run: Compress-Archive -Path wheels/*.whl -DestinationPath wheels/pywinappsdk-wheels.zip
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          wheels/*.whl
+          wheels/pywinappsdk-wheels.zip
           localpackages/*.nupkg
         generate_release_notes: false
         draft: false

@@ -26,12 +26,12 @@ app_instance = AppInstance.get_current()
 ### Build All Components
 To build all wheels and NuGet packages locally:
 ```powershell
-.\rebuildAll.ps1
+.\scripts\rebuildAll.ps1
 ```
 
 ### Run Tests
 ```powershell
-.\testAll.ps1
+.\scripts\testAll.ps1
 ```
 
 ### Download Pre-built Wheels

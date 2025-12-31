@@ -43,11 +43,11 @@ jobs:
 
     - name: Build All Packages
       shell: pwsh
-      run: .\rebuildAll.ps1
+      run: .\scripts\rebuildAll.ps1
 
     - name: Run Integration Tests
       shell: pwsh
-      run: .\testAll.ps1 -SkipMinimal
+      run: .\scripts\testAll.ps1 -SkipMinimal
 
     - name: Upload Wheels
       uses: actions/upload-artifact@v4

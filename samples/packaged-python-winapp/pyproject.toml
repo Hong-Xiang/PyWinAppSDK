@@ -1,0 +1,12 @@
+[project]
+name = "packaged-python-winapp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "winappsdk-Foundation"
+]
+
+[tool.uv]
+find-links = ["../../wheels"]
